@@ -16,116 +16,149 @@ import quizLogic.Question;
 import quizLogic.Thema;
 
 /**
- * Das rechte Panel im Quiz, das die Themen und Fragen anzeigt. Es ermöglicht
- * die Auswahl eines Themas und zeigt die zugehörigen Fragen an.
+ * Das rechte Panel im Quiz, das die Themen und Fragen anzeigt.
+ * Es ermöglicht die Auswahl eines Themas und zeigt die zugehörigen Fragen an.
  */
-
 public class QuizFragenRight extends JPanel {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	private ThemaFragenPanel themaFragenPanel;
-	private FakeDataDeliver fdd;
-	private QuizFragenLeft quizFragenLeft;
+    private ThemaFragenPanel themaFragenPanel;
+    private FakeDataDeliver fdd;
+    private QuizFragenLeft quizFragenLeft;
 
-	/**
-	 * Konstruktor für das QuizFragenRight Panel.
-	 * 
-	 * @param fdd Die FakeDataDeliver Instanz, die die Themen und Fragen liefert.
-	 */
-	public QuizFragenRight(FakeDataDeliver fdd) {
-		this.fdd = fdd;
-		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-		setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    /**
+     * Konstruktor für das QuizFragenRight Panel.
+     * 
+     * @param fdd Die FakeDataDeliver Instanz, die die Themen und Fragen liefert.
+     */
+    public QuizFragenRight(FakeDataDeliver fdd) {
+        this.fdd = fdd;
+        initPanel();
+        initThemaFragenPanel();
+        setupEvents();
+        initializeSelection();
+    }
 
-		// Panel: Thema und Fragen
-		List<Thema> alleThemenListe = new ArrayList<>();
-		for (Thema t : fdd.getAllThemen()) {
-			if (!"Alle Themen".equals(t.toString())) {
-				alleThemenListe.add(t);
-			}
-		}
-		themaFragenPanel = new ThemaFragenPanel(alleThemenListe);
-		add(themaFragenPanel);
-		add(Box.createVerticalStrut(15));
+    /**
+     * Initialisiert das Hauptpanel mit Layout und Rand.
+     */
+    private void initPanel() {
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    }
 
-		setupEvents();
+    /**
+     * Initialisiert das ThemaFragenPanel mit Themen und fügt es dem Panel hinzu.
+     */
+    private void initThemaFragenPanel() {
+        List<Thema> alleThemenListe = getFilteredThemen();
 
-		// Auswahl setzen
-		themaFragenPanel.getThemaComboBox().setSelectedIndex(0);
-		alleThemenListe.add(ThemaFragenPanel.ALLE_THEMEN);
-	}
+        themaFragenPanel = new ThemaFragenPanel(alleThemenListe);
+        add(themaFragenPanel);
+        add(Box.createVerticalStrut(15));
 
-	/**
-	 * Initialisiert die Ereignisse für das ThemaFragenPanel.
-	 * 
-	 * Aktualisiert die Fragenliste, wenn ein Thema ausgewählt wird. - Setzt die
-	 * ausgewählte Frage im QuizFragenLeft Panel, wenn eine Frage ausgewählt wird.
-	 */
+        // "Alle Themen" zum Ende der Liste hinzufügen
+        alleThemenListe.add(ThemaFragenPanel.ALLE_THEMEN);
+    }
 
-	private void setupEvents() {
-		themaFragenPanel.getThemaComboBox().addActionListener(e -> {
-			Thema selected = (Thema) themaFragenPanel.getThemaComboBox().getSelectedItem();
-			updateFragenList(selected);
-			if (quizFragenLeft != null && selected != null) {
-				quizFragenLeft.setThema(selected);
-			}
-		});
+    /**
+     * Filtert die Themenliste, sodass "Alle Themen" nicht doppelt vorkommt.
+     * 
+     * @return gefilterte Themenliste ohne "Alle Themen"
+     */
+    private List<Thema> getFilteredThemen() {
+        List<Thema> alleThemenListe = new ArrayList<>();
+        for (Thema t : fdd.getAllThemen()) {
+            if (!"Alle Themen".equals(t.toString())) {
+                alleThemenListe.add(t);
+            }
+        }
+        return alleThemenListe;
+    }
 
-		themaFragenPanel.getFragenList().addListSelectionListener(e -> {
-			if (!e.getValueIsAdjusting()) {
-				Question selectedQuestion = themaFragenPanel.getFragenList().getSelectedValue();
-				if (quizFragenLeft != null && selectedQuestion != null) {
-					quizFragenLeft.setFrage(selectedQuestion);
-				}
-			}
-		});
-	}
+    /**
+     * Setzt die Anfangsauswahl der ComboBox und der Fragenliste.
+     */
+    private void initializeSelection() {
+        if (themaFragenPanel.getThemaComboBox().getItemCount() > 0) {
+            themaFragenPanel.getThemaComboBox().setSelectedIndex(0);
+        }
+    }
 
-	/**
-	 * Aktualisiert die Liste der Fragen im ThemaFragenPanel basierend auf dem
-	 * ausgewählten Thema.
-	 * 
-	 * @param selectedThema Das ausgewählte Thema, dessen Fragen angezeigt werden sollen.
-	 */
-	private void updateFragenList(Thema selectedThema) {
-		DefaultListModel<Question> model = (DefaultListModel<Question>) themaFragenPanel.getFragenList().getModel();
-		model.clear();
+    /**
+     * Initialisiert die Ereignisse für das ThemaFragenPanel.
+     * Aktualisiert die Fragenliste, wenn ein Thema ausgewählt wird.
+     * Setzt die ausgewählte Frage im QuizFragenLeft Panel, wenn eine Frage ausgewählt wird.
+     */
+    private void setupEvents() {
+        themaFragenPanel.getThemaComboBox().addActionListener(e -> {
+            Thema selected = (Thema) themaFragenPanel.getThemaComboBox().getSelectedItem();
+            updateFragenList(selected);
+            if (quizFragenLeft != null && selected != null) {
+                quizFragenLeft.setThema(selected);
+            }
+        });
 
-		if (selectedThema == ThemaFragenPanel.ALLE_THEMEN) {
-			for (Thema thema : fdd.getAllThemen()) {
-				if (thema.getAllQuestions() != null) {
-					for (Question q : thema.getAllQuestions()) {
-						model.addElement(q);
-					}
-				}
-			}
-		} else if (selectedThema != null && selectedThema.getAllQuestions() != null) {
-			for (Question q : selectedThema.getAllQuestions()) {
-				model.addElement(q);
-			}
-		}
-	}
+        themaFragenPanel.getFragenList().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                Question selectedQuestion = themaFragenPanel.getFragenList().getSelectedValue();
+                if (quizFragenLeft != null && selectedQuestion != null) {
+                    quizFragenLeft.setFrage(selectedQuestion);
+                }
+            }
+        });
+    }
 
-	/**
-	 * Lädt die Themen neu und aktualisiert die ComboBox im ThemaFragenPanel.
-	 * 
-	 * @param neueThemen Die neuen Themen, die geladen werden sollen.
-	 */
+    /**
+     * Aktualisiert die Liste der Fragen im ThemaFragenPanel basierend auf dem ausgewählten Thema.
+     * 
+     * @param selectedThema Das ausgewählte Thema, dessen Fragen angezeigt werden sollen.
+     */
+    private void updateFragenList(Thema selectedThema) {
+        DefaultListModel<Question> model = (DefaultListModel<Question>) themaFragenPanel.getFragenList().getModel();
+        model.clear();
 
-	public void reloadThemen(Collection<Thema> neueThemen) {
-		themaFragenPanel.setThemen(neueThemen);
-		themaFragenPanel.getThemaComboBox().setSelectedIndex(0);
-	}
+        if (selectedThema == ThemaFragenPanel.ALLE_THEMEN) {
+            for (Thema thema : fdd.getAllThemen()) {
+                if (thema.getAllQuestions() != null) {
+                    for (Question q : thema.getAllQuestions()) {
+                        model.addElement(q);
+                    }
+                }
+            }
+        } else if (selectedThema != null && selectedThema.getAllQuestions() != null) {
+            for (Question q : selectedThema.getAllQuestions()) {
+                model.addElement(q);
+            }
+        }
+    }
 
-	// Setter für QuizFragenLeft Panel
-	public void setPanelLeft(QuizFragenLeft quizFragenLeft) {
-		this.quizFragenLeft = quizFragenLeft;
-	}
+    /**
+     * Lädt die Themen neu und aktualisiert die ComboBox im ThemaFragenPanel.
+     * 
+     * @param neueThemen Die neuen Themen, die geladen werden sollen.
+     */
+    public void reloadThemen(Collection<Thema> neueThemen) {
+        themaFragenPanel.setThemen(neueThemen);
+        themaFragenPanel.getThemaComboBox().setSelectedIndex(0);
+    }
 
-	// Getter für ThemaFragenPanel
-	public ThemaFragenPanel getThemaFragenPanel() {
-		return themaFragenPanel;
-	}
+    /**
+     * Setter für das verknüpfte QuizFragenLeft Panel.
+     * 
+     * @param quizFragenLeft Das linke Quiz-Fragen Panel.
+     */
+    public void setPanelLeft(QuizFragenLeft quizFragenLeft) {
+        this.quizFragenLeft = quizFragenLeft;
+    }
 
+    /**
+     * Getter für das ThemaFragenPanel.
+     * 
+     * @return das ThemaFragenPanel
+     */
+    public ThemaFragenPanel getThemaFragenPanel() {
+        return themaFragenPanel;
+    }
 }

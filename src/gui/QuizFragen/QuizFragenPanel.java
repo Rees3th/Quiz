@@ -1,6 +1,7 @@
 package gui.QuizFragen;
 
 import java.awt.BorderLayout;
+import java.util.Collection;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
@@ -10,12 +11,6 @@ import quizLogic.FakeDataDeliver;
 import quizLogic.Question;
 import quizLogic.Thema;
 
-/**
- * Panel für die Verwaltung von Quizfragen. Enthält ein linkes Panel für die
- * Frageingabe, ein rechtes Panel für die Themen und Fragenliste sowie ein
- * unteres Panel für Aktionen wie Speichern und Löschen von Fragen.
- */
-
 public class QuizFragenPanel extends JPanel implements QuizFragenDelegate {
 
 	private static final long serialVersionUID = 1L;
@@ -24,36 +19,63 @@ public class QuizFragenPanel extends JPanel implements QuizFragenDelegate {
 	private QuizFragenRight quizFragenRight;
 	private QuizFragenBottom quizFragenBottom;
 	private FakeDataDeliver fdd;
-	private QuizFragenDelegate quizFragenPanel;
 
 	/**
 	 * Konstruktor für das QuizFragenPanel.
 	 * 
-	 * @param fdd FakeDataDeliver, der die Daten liefert (Themen und Fragen).
+	 * @param fdd FakeDataDeliver für Themen und Fragen.
 	 */
 	public QuizFragenPanel(FakeDataDeliver fdd) {
 		super();
 		this.fdd = fdd;
-		setLayout(new BorderLayout(10, 10));
+		initLayout();
+		initComponents();
+		linkComponents();
+		setDelegate();
+	}
 
+	/**
+	 * Initialisiert das Layout des Panels.
+	 */
+	private void initLayout() {
+		setLayout(new BorderLayout(10, 10));
+	}
+
+	/**
+	 * Initialisiert die Komponenten des Panels.
+	 */
+	private void initComponents() {
 		quizFragenLeft = new QuizFragenLeft(fdd);
 		quizFragenRight = new QuizFragenRight(fdd);
+		quizFragenBottom = new QuizFragenBottom();
+	}
+
+	/**
+	 * Verknüpft die Komponenten des Panels miteinander. Diese Methode stellt
+	 * sicher, dass die linken und rechten Panels korrekt miteinander kommunizieren
+	 * können.
+	 */
+	private void linkComponents() {
 		quizFragenRight.setPanelLeft(quizFragenLeft);
 		quizFragenLeft.setPanelRight(quizFragenRight);
-
-		quizFragenBottom = new QuizFragenBottom();
 
 		add(quizFragenLeft, BorderLayout.WEST);
 		add(quizFragenRight, BorderLayout.EAST);
 		add(quizFragenBottom, BorderLayout.SOUTH);
-
-		quizFragenBottom.setDelegate(this);
-
 	}
 
 	/**
-	 * Methode, die löscht, wenn eine Frage ausgewählt wird. Aktualisiert das linke
-	 * Panel mit den Details der ausgewählten Frage.
+	 * Setzt den Delegate für die QuizFragenBottom-Komponente. Diese Methode
+	 * ermöglicht es dem Bottom-Panel, Ereignisse an das QuizFragenPanel
+	 * weiterzuleiten.
+	 */
+	private void setDelegate() {
+		quizFragenBottom.setDelegate(this);
+	}
+
+	/**
+	 * Löscht die aktuell ausgewählte Frage aus der Liste. Entfernt die Frage aus
+	 * dem Modell und leert die Eingabefelder im linken Panel.
 	 */
 	@Override
 	public void onDeleteQuestion() {
@@ -67,16 +89,16 @@ public class QuizFragenPanel extends JPanel implements QuizFragenDelegate {
 	}
 
 	/**
-	 * Methode, die aufgerufen wird, wenn eine Frage gespeichert wird. Speichert die
-	 * aktuelle Frage in der Liste oder aktualisiert sie, wenn sie bereits
-	 * existiert.
+	 * Speichert eine neue oder aktualisierte Frage. Prüft zunächst, ob eine Frage
+	 * mit gleichem Titel im Thema existiert. Bei Aktualisierung wird die
+	 * ausgewählte Frage überschrieben, bei neuer Frage wird diese dem Thema und
+	 * Modell hinzugefügt.
 	 */
 	@Override
 	public void onSaveQuestion() {
 		DefaultListModel<Question> model = (DefaultListModel<Question>) quizFragenRight.getThemaFragenPanel()
 				.getFragenList().getModel();
 		int selectedIndex = quizFragenRight.getThemaFragenPanel().getFragenList().getSelectedIndex();
-
 		String titel = quizFragenLeft.getTitelField().getText().trim();
 		Thema aktuelleThema = (Thema) quizFragenRight.getThemaFragenPanel().getThemaComboBox().getSelectedItem();
 
@@ -104,19 +126,20 @@ public class QuizFragenPanel extends JPanel implements QuizFragenDelegate {
 	}
 
 	/**
-	 * Überprüft, ob eine Frage mit dem gleichen Titel im Thema bereits existiert.
-	 * 
-	 * @param thema   Das Thema, in dem nach der Frage gesucht wird.
-	 * @param titel   Der Titel der zu überprüfenden Frage.
-	 * @param exclude Die Frage, die ausgeschlossen werden soll (z.B. beim
-	 *                Aktualisieren).
-	 * @return true, wenn eine Frage mit dem gleichen Titel existiert, sonst false.
+	 * Prüft, ob in einem bestimmten Thema eine Frage mit einem bestimmten Titel
+	 * bereits existiert. Die aktuell bearbeitete Frage (exclude) wird ignoriert, um
+	 * Doppelmeldungen bei Update zu vermeiden.
+	 *
+	 * @param thema   Das Thema, in dem gesucht wird.
+	 * @param titel   Der Titel, der geprüft wird.
+	 * @param exclude Die Frage, die bei der Suche ausgeschlossen wird.
+	 * @return true, falls eine andere Frage den Titel verwendet, sonst false.
 	 */
-
 	private boolean frageTitelExists(Thema thema, String titel, Question exclude) {
 		titel = titel.trim().toLowerCase();
 		if (thema == null || thema.getAllQuestions() == null)
 			return false;
+
 		for (Question q : thema.getAllQuestions()) {
 			if (q == exclude)
 				continue;
@@ -128,27 +151,21 @@ public class QuizFragenPanel extends JPanel implements QuizFragenDelegate {
 	}
 
 	/**
-	 * Methode, die aufgerufen wird, wenn eine neue Frage erstellt wird. Setzt die
-	 * Felder im linken Panel zurück und leert die Auswahl im rechten Panel.
+	 * Bereitet die Benutzeroberfläche auf eine neue Frage vor. Setzt alle
+	 * Eingabefelder im linken Panel zurück und entfernt die Markierung in der
+	 * Fragenliste im rechten Panel.
 	 */
 	@Override
 	public void onNewQuestion() {
-		quizFragenLeft.setFrage(null); // Setzt alle Felder zurück
-		quizFragenRight.getThemaFragenPanel().getFragenList().clearSelection();
+		quizFragenLeft.setFrage(null); // Felder zurücksetzen
+		quizFragenRight.getThemaFragenPanel().getFragenList().clearSelection(); // Auswahl löschen
 	}
 
 	/**
-	 * Methode, die aufgerufen wird, wenn die Themen neu geladen werden.
-	 * Aktualisiert die Themenliste im rechten Panel und setzt die Auswahl zurück.
+	 * Lädt die Themen neu und aktualisiert Themenliste des rechten Panels.
 	 */
-
 	public void reloadThemen() {
-		quizFragenRight.reloadThemen(fdd.getAllThemen());
+		Collection<Thema> alleThemen = fdd.getAllThemen();
+		quizFragenRight.reloadThemen(alleThemen);
 	}
-
-	// Setter
-	public void setQuizFragenPanel(QuizFragenPanel quizFragenPanel) {
-		this.quizFragenPanel = quizFragenPanel;
-	}
-
 }
