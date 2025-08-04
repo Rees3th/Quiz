@@ -1,0 +1,147 @@
+package gui.Quiz;
+
+import java.awt.BorderLayout;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.DefaultListModel;
+import javax.swing.JPanel;
+
+import quizLogic.Answer;
+import quizLogic.FakeDataDeliver;
+import quizLogic.Question;
+import quizLogic.Thema;
+
+/**
+ * QuizPanel ist das Hauptpanel für die Quiz-Anwendung. Es enthält die linken,
+ * rechten und unteren Panels für die Anzeige von Fragen, Antworten und
+ * Steuerungselementen.
+ */
+
+public class QuizPanel extends JPanel implements QuizDelegate {
+
+	private static final long serialVersionUID = 1L;
+
+	private QuizPanelLeft quizPanelLeft;
+	private QuizPanelRight quizPanelRight;
+	private QuizPanelBottom quizButtonPanel;
+	private FakeDataDeliver fdd;
+
+	public QuizPanel(FakeDataDeliver fdd) {
+		super();
+		this.fdd = fdd; 
+		setLayout(new BorderLayout(10, 10)); 
+
+		quizPanelLeft = new QuizPanelLeft(fdd);
+		quizPanelRight = new QuizPanelRight(fdd);
+		quizPanelRight.setPanelLeft(quizPanelLeft);
+		quizPanelLeft.setPanelRight(quizPanelRight);
+		quizButtonPanel = new QuizPanelBottom();
+
+		add(quizPanelLeft, BorderLayout.WEST);
+		add(quizPanelRight, BorderLayout.EAST);
+		add(quizButtonPanel, BorderLayout.SOUTH);
+
+		quizButtonPanel.setDelegate(this);
+	}
+
+
+	/**
+	 * Diese Methode wird aufgerufen, wenn der Benutzer die Antwort anzeigen möchte.
+	 * Sie zeigt die richtige Antwort für die aktuell ausgewählte Frage an. TODO:läuft nicht
+	 */
+	
+	@Override
+	public void onShowAnswer() {
+		Question currentQuestion = quizPanelRight.getThemaFragenPanel().getFragenList().getSelectedValue();
+		if (currentQuestion == null) {
+			return;
+		}
+		
+		quizPanelRight.markAnswered(currentQuestion.getId());	
+		quizPanelRight.getThemaFragenPanel().getFragenList().repaint();
+
+		Answer richtigeAntwort = null;
+		for (Answer a : currentQuestion.getAnswers()) {
+			if (a.isCorrect()) {
+				richtigeAntwort = a;
+				break;
+			}
+		}
+		String info;
+		if (richtigeAntwort == null) {
+			info = "Bei dieser Frage ist keine richtige Antwort markiert.";
+		} else {
+			info = "Die richtige Antwort ist: " + richtigeAntwort.getText();
+		}
+		
+		quizPanelLeft.getMessageField().setText(info);
+
+	}
+
+	/**
+	 * Diese Methode wird aufgerufen, wenn der Benutzer die Antwort speichern möchte
+	 */
+	
+	@Override
+	public void onSaveAnswer() {
+		System.out.println("Antwort gespeichert");
+
+	}
+
+	/**
+	 * Diese Methode wird aufgerufen, wenn der Benutzer eine neue Frage anfordert.
+	 * Sie wählt zufällig eine Frage aus dem aktuellen Thema oder aus allen Themen
+	 * aus.
+	 */
+
+	@Override
+	public void onNewQuestion() {
+		Thema selectedThema = (Thema) quizPanelRight.getThemaFragenPanel().getThemaComboBox().getSelectedItem();
+		List<Question> alleFragen = new ArrayList<>();
+		if (selectedThema != null && selectedThema.getAllQuestions() != null
+				&& !selectedThema.getAllQuestions().isEmpty()) {
+			alleFragen.addAll(selectedThema.getAllQuestions());
+		} else {
+			for (Thema t : quizPanelRight.getFdd().getAllThemen()) {
+				if (t.getAllQuestions() != null) {
+					alleFragen.addAll(t.getAllQuestions());
+				}
+			}
+		}
+
+		if (alleFragen.isEmpty()) {
+			quizPanelLeft.getMessageField().setText("Keine Fragen vorhanden.");
+			return;
+		}
+		int idx = (int) (Math.random() * alleFragen.size());
+		Question randomQuestion = alleFragen.get(idx);
+
+		DefaultListModel<Question> model = (DefaultListModel<Question>) quizPanelRight.getThemaFragenPanel()
+				.getFragenList().getModel();
+		for (int i = 0; i < model.size(); i++) {
+			if (model.getElementAt(i).equals(randomQuestion)) {
+				quizPanelRight.getThemaFragenPanel().getFragenList().setSelectedIndex(i);
+				quizPanelLeft.setFrage(randomQuestion);
+				break;
+			}
+		}
+
+		quizPanelLeft.setFrage(randomQuestion);
+		quizPanelLeft.getMessageField().setText("");
+	}
+	
+	// Getter für die Subpanels
+	public QuizPanelLeft getQuizPanelLeft() {
+		return quizPanelLeft;
+	}
+
+	public QuizPanelRight getQuizPanelRight() {
+		return quizPanelRight;
+	}
+
+	public QuizPanelBottom getQuizButtonPanel() {
+		return quizButtonPanel;
+	}
+
+}
