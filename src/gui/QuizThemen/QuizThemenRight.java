@@ -12,31 +12,42 @@ import quizLogic.Thema;
 
 /**
  * Panel für die rechte Seite der Quiz-Themen-Ansicht. Zeigt eine Liste von
- * Themen an und ermöglicht die Auswahl eines Themas. Das ausgewählte Thema wird
- * an das linke Panel (QuizThemenLeft) weitergegeben.
+ * Themen an und ermöglicht deren Auswahl. Das ausgewählte Thema wird an das
+ * linke Panel weitergegeben.
  */
 public class QuizThemenRight extends JPanel {
+
 	private static final long serialVersionUID = 1L;
+
 	private QuizThemenLeft quizThemenLeft;
 	private ThemaPanel themaPanel;
 
 	/**
-	 * Konstruktor, der eine Liste von Themen erwartet.
+	 * Konstruktor, der eine Liste von Themen für das Panel erwartet.
 	 * 
-	 * @param themen Sammlung von Themen, die angezeigt werden sollen
+	 * @param themen Sammlung von anzuzeigenden Themen.
 	 */
-	
 	public QuizThemenRight(Collection<Thema> themen) {
 		super();
+		initPanelLayout();
+		initThemaPanel(themen);
+	}
+
+	/** Initialisiert das Layout des Panels. */
+	private void initPanelLayout() {
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 		setMaximumSize(new Dimension(500, 500));
 		setPreferredSize(new Dimension(350, 500));
+	}
 
+	/**
+	 * Initialisiert das ThemaPanel, fügt Listener zur Weitergabe der Auswahl ans
+	 * linke Panel hinzu.
+	 */
+	private void initThemaPanel(Collection<Thema> themen) {
 		themaPanel = new ThemaPanel(themen);
 		add(themaPanel);
-
-		// Listener für die Themenliste, um das ausgewählte Thema zu aktualisieren
 		themaPanel.getThemenList().addListSelectionListener(e -> {
 			if (!e.getValueIsAdjusting()) {
 				Thema selected = themaPanel.getThemenList().getSelectedValue();
@@ -48,26 +59,28 @@ public class QuizThemenRight extends JPanel {
 	}
 
 	/**
-	 * Setzt das linke Panel, um das ausgewählte Thema anzuzeigen.
+	 * Verknüpft das linke Panel, um die Anzeige beim Themawechsel zu aktualisieren.
 	 * 
-	 * @param quizThemenLeft das linke Panel, das die Themen anzeigt
+	 * @param quizThemenLeft das linke Themen-Panel.
 	 */
-
 	public void setPanelLeft(QuizThemenLeft quizThemenLeft) {
 		this.quizThemenLeft = quizThemenLeft;
 	}
 
 	/**
-	 * Ermöglicht das Setzen der Themen für das ThemaPanel.
+	 * Aktualisiert die angezeigten Themen im ThemaPanel.
 	 * 
-	 * @param themen Sammlung von Themen, die im ThemaPanel angezeigt werden sollen
+	 * @param themen neue Sammlung von Themen.
 	 */
-
 	public void setThemen(Collection<Thema> themen) {
 		themaPanel.setThemen(themen);
 	}
 
-	// Getter für das ThemaPanel, um darauf zuzugreifen
+	/**
+	 * Getter für das ThemaPanel (enthält die Liste).
+	 * 
+	 * @return ThemaPanel
+	 */
 	public ThemaPanel getThemaPanel() {
 		return themaPanel;
 	}

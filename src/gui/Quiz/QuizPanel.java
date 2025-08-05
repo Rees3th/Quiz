@@ -13,13 +13,10 @@ import quizLogic.Question;
 import quizLogic.Thema;
 
 /**
- * QuizPanel ist das Hauptpanel für die Quiz-Anwendung. Es enthält die linken,
- * rechten und unteren Panels für die Anzeige von Fragen, Antworten und
- * Steuerungselementen.
+ * Hauptpanel für die Quiz-Anwendung. Besteht aus dem linken, rechten und
+ * unteren Panel für die Anzeige und Steuerung.
  */
-
 public class QuizPanel extends JPanel implements QuizDelegate {
-
 	private static final long serialVersionUID = 1L;
 
 	private QuizPanelLeft quizPanelLeft;
@@ -27,38 +24,52 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 	private QuizPanelBottom quizButtonPanel;
 	private FakeDataDeliver fdd;
 
+	/**
+	 * Konstruktor für das Haupt-Quiz-Panel.
+	 */
 	public QuizPanel(FakeDataDeliver fdd) {
 		super();
-		this.fdd = fdd; 
-		setLayout(new BorderLayout(10, 10)); 
+		this.fdd = fdd;
+		setLayout(new BorderLayout(10, 10));
+		initPanels();
+		SetPanels();
+		buildLayout();
+	}
 
+	/** Initialisiert und erzeugt die Unterpanels. */
+	private void initPanels() {
 		quizPanelLeft = new QuizPanelLeft(fdd);
 		quizPanelRight = new QuizPanelRight(fdd);
+		quizButtonPanel = new QuizPanelBottom();
+	}
+
+	/**
+	 * Verknüpft die Panels.
+	 */
+	private void SetPanels() {
 		quizPanelRight.setPanelLeft(quizPanelLeft);
 		quizPanelLeft.setPanelRight(quizPanelRight);
-		quizButtonPanel = new QuizPanelBottom();
-
-		add(quizPanelLeft, BorderLayout.WEST);
-		add(quizPanelRight, BorderLayout.EAST);
-		add(quizButtonPanel, BorderLayout.SOUTH);
-
 		quizButtonPanel.setDelegate(this);
 	}
 
+	/** Bauen des Layouts mit den Panels. */
+	private void buildLayout() {
+		add(quizPanelLeft, BorderLayout.WEST);
+		add(quizPanelRight, BorderLayout.EAST);
+		add(quizButtonPanel, BorderLayout.SOUTH);
+	}
 
 	/**
-	 * Diese Methode wird aufgerufen, wenn der Benutzer die Antwort anzeigen möchte.
-	 * Sie zeigt die richtige Antwort für die aktuell ausgewählte Frage an. TODO:läuft nicht
+	 * Zeigt die richtige Antwort für die aktuell ausgewählte Frage an.
+	 * TODO: Überprüfen.
 	 */
-	
 	@Override
 	public void onShowAnswer() {
 		Question currentQuestion = quizPanelRight.getThemaFragenPanel().getFragenList().getSelectedValue();
-		if (currentQuestion == null) {
+		if (currentQuestion == null)
 			return;
-		}
-		
-		quizPanelRight.markAnswered(currentQuestion.getId());	
+
+		quizPanelRight.markAnswered(currentQuestion.getId());
 		quizPanelRight.getThemaFragenPanel().getFragenList().repaint();
 
 		Answer richtigeAntwort = null;
@@ -68,36 +79,30 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 				break;
 			}
 		}
-		String info;
-		if (richtigeAntwort == null) {
-			info = "Bei dieser Frage ist keine richtige Antwort markiert.";
-		} else {
-			info = "Die richtige Antwort ist: " + richtigeAntwort.getText();
-		}
-		
-		quizPanelLeft.getMessageField().setText(info);
 
+		String info = (richtigeAntwort == null) ? "Bei dieser Frage ist keine richtige Antwort markiert."
+				: "Die richtige Antwort ist: " + richtigeAntwort.getText();
+
+		quizPanelLeft.getMessageField().setText(info);
 	}
 
 	/**
-	 * Diese Methode wird aufgerufen, wenn der Benutzer die Antwort speichern möchte
+	 * Platzhalter für Speichern der Antwort.
 	 */
-	
 	@Override
 	public void onSaveAnswer() {
 		System.out.println("Antwort gespeichert");
-
 	}
 
 	/**
-	 * Diese Methode wird aufgerufen, wenn der Benutzer eine neue Frage anfordert.
-	 * Sie wählt zufällig eine Frage aus dem aktuellen Thema oder aus allen Themen
-	 * aus.
+	 * Wählt zufällig eine Frage aus dem aktuellen Thema oder aus allen Themen.
+	 * Setzt die Auswahl und zeigt ggf. eine Meldung, falls keine Fragen vorhanden
+	 * sind.
 	 */
-
 	@Override
 	public void onNewQuestion() {
 		Thema selectedThema = (Thema) quizPanelRight.getThemaFragenPanel().getThemaComboBox().getSelectedItem();
+
 		List<Question> alleFragen = new ArrayList<>();
 		if (selectedThema != null && selectedThema.getAllQuestions() != null
 				&& !selectedThema.getAllQuestions().isEmpty()) {
@@ -114,6 +119,7 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 			quizPanelLeft.getMessageField().setText("Keine Fragen vorhanden.");
 			return;
 		}
+
 		int idx = (int) (Math.random() * alleFragen.size());
 		Question randomQuestion = alleFragen.get(idx);
 
@@ -126,11 +132,10 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 				break;
 			}
 		}
-
 		quizPanelLeft.setFrage(randomQuestion);
 		quizPanelLeft.getMessageField().setText("");
 	}
-	
+
 	// Getter für die Subpanels
 	public QuizPanelLeft getQuizPanelLeft() {
 		return quizPanelLeft;
@@ -143,5 +148,4 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 	public QuizPanelBottom getQuizButtonPanel() {
 		return quizButtonPanel;
 	}
-
 }
