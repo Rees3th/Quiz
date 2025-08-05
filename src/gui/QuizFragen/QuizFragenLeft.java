@@ -26,8 +26,8 @@ import quizLogic.Question;
 import quizLogic.Thema;
 
 /**
- * Linke Seite des Quiz-Fragen-Editors, mit Eingabefeldern für Frage &
- * Antworten.
+ * Linke Seite des Quiz-Fragen-Editors, die die Eingabefelder für eine Frage und
+ * deren Antworten enthält.
  */
 public class QuizFragenLeft extends JPanel {
 
@@ -42,22 +42,20 @@ public class QuizFragenLeft extends JPanel {
 	private FakeDataDeliver fdd;
 	private Map<Integer, Answer> answerMap = new HashMap<>();
 
-	/**
-	 * Konstruktor für das linke Panel des Quiz-Fragen-Editors.
-	 *
-	 * @param fdd FakeDataDeliver, um zufällige Fragen zu laden.
-	 */
 	public QuizFragenLeft(FakeDataDeliver fdd) {
 		this.fdd = fdd;
 		initPanel();
 		initComponents();
 		layoutComponents();
+
 		if (fdd != null) {
 			fillWithData(fdd.getRandomQuestion());
 		}
 	}
 
-	/** Initialisiert das Layout des Panels. */
+	/**
+	 * Initialisiert Layout und grundlegende Einstellungen des Panels
+	 */
 	private void initPanel() {
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -65,7 +63,9 @@ public class QuizFragenLeft extends JPanel {
 		setPreferredSize(new Dimension(450, 500));
 	}
 
-	/** Initialisiert die Komponenten des Panels. */
+	/**
+	 * Initialisiert alle GUI-Komponenten
+	 */
 	private void initComponents() {
 		themaField = new JTextField(27);
 		themaField.setEditable(false);
@@ -86,37 +86,51 @@ public class QuizFragenLeft extends JPanel {
 		messageField.setEditable(false);
 	}
 
-	/** Layoutet die Komponenten im Panel. */
+	/**
+	 * Baut das Layout mit den Komponenten auf
+	 */
 	private void layoutComponents() {
 		add(new LabelFieldPanel("Thema:", themaField));
 		add(Box.createVerticalStrut(10));
+
 		add(new LabelFieldPanel("Titel:", titelField));
 		add(Box.createVerticalStrut(10));
+
 		add(new FragePanel(frageArea));
 		add(Box.createVerticalStrut(15));
+
 		addAnswersHeader();
 		add(Box.createVerticalStrut(8));
 		addAnswerRows();
 		add(Box.createVerticalStrut(15));
+
 		add(new MessagePanel(messageField));
 		add(Box.createVerticalStrut(15));
 	}
 
-	/** Fügt die Überschrift für die Antwortfelder hinzu. */
+	/**
+	 * Fügt die Headerzeile für die Antworten hinzu
+	 */
 	private void addAnswersHeader() {
 		JPanel answersHeader = new JPanel();
 		answersHeader.setLayout(new BoxLayout(answersHeader, BoxLayout.X_AXIS));
+
 		JLabel label = new JLabel("Mögliche Antwortwahl");
 		label.setPreferredSize(new Dimension(170, 16));
 		answersHeader.add(label);
+
 		answersHeader.add(Box.createHorizontalGlue());
+
 		JLabel label2 = new JLabel("Richtig");
 		label2.setPreferredSize(new Dimension(50, 16));
 		answersHeader.add(label2);
+
 		add(answersHeader);
 	}
 
-	/** Fügt die Antwortzeilen zum Panel hinzu. */
+	/**
+	 * Fügt die Antwortzeilen mit Textfeldern und Checkboxen hinzu
+	 */
 	private void addAnswerRows() {
 		for (int i = 0; i < 4; i++) {
 			add(new AnswerRowPanel(i + 1, answerFields[i], checkboxes[i]));
@@ -125,11 +139,9 @@ public class QuizFragenLeft extends JPanel {
 	}
 
 	/**
-	 * Füllt die Eingabefelder mit den Daten der angegebenen Frage.
-	 *
-	 * @param q die Frage, deren Daten angezeigt werden sollen.
+	 * Füllt die Eingabefelder mit den Daten einer übergebenen Frage
 	 */
-	public void fillWithData(Question q) {
+	private void fillWithData(Question q) {
 		if (q == null) {
 			clearFields();
 			return;
@@ -137,6 +149,7 @@ public class QuizFragenLeft extends JPanel {
 		themaField.setText(q.getThema() != null ? q.getThema().getTitle() : "");
 		titelField.setText(q.getTitle());
 		frageArea.setText(q.getText());
+
 		List<Answer> answers = new ArrayList<>(q.getAnswers());
 		for (int i = 0; i < answerFields.length; i++) {
 			if (i < answers.size()) {
@@ -149,8 +162,10 @@ public class QuizFragenLeft extends JPanel {
 		}
 	}
 
-	/** Löscht alle Eingabefelder im Panel. */
-	public void clearFields() {
+	/**
+	 * Löscht alle Eingabefelder
+	 */
+	private void clearFields() {
 		themaField.setText("");
 		titelField.setText("");
 		frageArea.setText("");
@@ -160,19 +175,108 @@ public class QuizFragenLeft extends JPanel {
 		}
 	}
 
-	/** Setzt das Thema-Feld basierend auf dem angegebenen Thema. */
+	/**
+	 * Setzt das Thema-Feld auf den Titel des übergebenen Themas
+	 */
 	public void setThema(Thema t) {
 		if (t != null)
 			themaField.setText(t.getTitle());
 	}
 
-	/** Setzt die Frage-Felder basierend auf der angegebenen Frage. */
+	/**
+	 * Setzt die Frage-Felder basierend auf der übergebenen Frage
+	 */
 	public void setFrage(Question q) {
 		fillWithData(q);
 	}
 
-	/** Erstellt eine neue Frage basierend auf den Eingabefeldern. */
+	/**
+	 * Gibt die aktuell eingegebene Frage zurück
+	 */
+	public Question getSelectedQuestion() {
+		Question q = new Question(null);
+		q.setTitle(titelField.getText());
+		q.setText(frageArea.getText());
+
+		Thema thema = new Thema();
+		thema.setTitle(themaField.getText());
+		q.setThema(thema);
+
+		for (int i = 0; i < answerFields.length; i++) {
+			String text = answerFields[i].getText();
+			if (text != null && !text.isEmpty()) {
+				Answer a = new Answer(q);
+				a.setText(text);
+				a.setCorrect(checkboxes[i].isSelected());
+				q.addAnswer(a);
+			}
+		}
+		return q;
+	}
+
+	/**
+	 * Aktualisiert die übergebene Frage mit den aktuellen Eingabefeldern
+	 */
+	public void updateQuestionFromFields(Question q) {
+		if (q == null)
+			return;
+
+		q.setTitle(titelField.getText());
+		q.setText(frageArea.getText());
+
+		q.getAnswers().clear();
+
+		for (int i = 0; i < answerFields.length; i++) {
+			String txt = answerFields[i].getText();
+			if (txt != null && !txt.trim().isEmpty()) {
+				Answer a = new Answer(q);
+				a.setId(fdd.getNextAnswerId());
+				a.setText(txt);
+				a.setCorrect(checkboxes[i].isSelected());
+				q.addAnswer(a);
+			}
+		}
+	}
+
+	/**
+	 * Erstellt eine neue Frage basierend auf den Eingabefeldern
+	 */
+	public Question getNewQuestionFromFields() {
+		Question q = new Question(null);
+		q.setId(fdd.getNextQuestionId());
+		q.setTitle(titelField.getText());
+		q.setText(frageArea.getText());
+
+		for (int i = 0; i < answerFields.length; i++) {
+			String text = answerFields[i].getText();
+			if (text != null && !text.trim().isEmpty()) {
+				Answer a = new Answer(q);
+				a.setId(fdd.getNextAnswerId());
+				a.setText(text);
+				a.setCorrect(checkboxes[i].isSelected());
+				q.addAnswer(a);
+			}
+		}
+		return q;
+	}
+
+	// Getter
+
+	public JTextField getTitelField() {
+		return titelField;
+	}
+
 	public JTextField getMessageField() {
 		return messageField;
+	}
+
+	// Setter
+
+	public void setPanelRight(QuizFragenRight quizFragenRight) {
+		// Implementierung falls benötigt
+	}
+
+	public Collection<Answer> getAnswers() {
+		return answerMap.values();
 	}
 }
