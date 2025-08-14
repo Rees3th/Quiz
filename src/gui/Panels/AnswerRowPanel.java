@@ -1,38 +1,63 @@
 package gui.Panels;
 
+import java.awt.Dimension;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
-
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 /**
- * AnswerRowPanel ist eine Klasse, die ein Panel für eine Antwortzeile in einem
- * Quiz darstellt. Es enthält ein Label, ein Textfeld für die Antwort und eine
- * Checkbox, um anzugeben, ob die Antwort korrekt ist. Die Klasse erweitert
- * JPanel und verwendet BoxLayout für die Anordnung der Komponenten.
+ * {@code AnswerRowPanel} represents a single answer row in a quiz question UI.
+ * <p>
+ * Each row contains:
+ * <ul>
+ * <li>A label showing the answer number/index</li>
+ * <li>A text field for entering or displaying the answer text</li>
+ * <li>A checkbox to indicate whether the answer is correct</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * This panel uses a horizontal {@link BoxLayout} to arrange the label, text
+ * field, and checkbox from left to right. It is typically used in conjunction
+ * with {@link AnswerHeaderPanel} to build a complete answer section in quiz
+ * question forms or displays.
+ * </p>
+ * 
+ * @author Oleg Kapirulya
  */
 public class AnswerRowPanel extends JPanel {
 
+	/** Serial version UID for serialization compatibility. */
 	private static final long serialVersionUID = 1L;
 
 	/**
-	 * Konstruktor der Klasse AnswerRowPanel.
-	 * 
-	 * @param idx   Der Index der Antwort, der im Label angezeigt wird.
-	 * @param field Das Textfeld für die Eingabe der Antwort.
-	 * @param box   Die Checkbox, um anzugeben, ob die Antwort korrekt ist.
+	 * Constructs an {@code AnswerRowPanel} with the given index, text field, and
+	 * checkbox.
+	 *
+	 * @param idx   the answer index (1-based) shown in the label
+	 * @param field the {@link JTextField} for entering or displaying the answer
+	 *              text
+	 * @param box   the {@link JCheckBox} for marking the answer as correct
 	 */
-
 	public AnswerRowPanel(int idx, JTextField field, JCheckBox box) {
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+
+		// Label for the answer number
 		JLabel label = new JLabel("Antwort " + idx + ":");
-		label.setPreferredSize(new java.awt.Dimension(80, 36));
+		label.setPreferredSize(new Dimension(80, 36));
 		add(label);
-		field.setPreferredSize(new java.awt.Dimension(400, 25));
+
+		// Answer text field
+		field.setPreferredSize(new Dimension(400, 25));
 		add(field);
-		add(javax.swing.Box.createHorizontalStrut(30));
+
+		// Spacer before the checkbox
+		add(Box.createHorizontalStrut(30));
+
+		// Correctness checkbox
 		add(box);
 	}
 }

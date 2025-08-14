@@ -4,203 +4,175 @@ import java.awt.BorderLayout;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
 import javax.swing.JPanel;
 
 import persistence.serialization.QuizDataManager;
 import quizLogic.Answer;
 import quizLogic.Question;
-import quizLogic.Thema;
+import quizLogic.Theme;
+import quizLogic.QuizValidator;
 
 /**
- * Das Haupt-Panel für das Quiz-Interface.
+ * {@code QuizPanel} is the main panel for running the quiz gameplay.
+ * <p>
+ * It combines:
+ * <ul>
+ * <li>{@link QuizPanelLeft} – left-side question display and answer selection
+ * area</li>
+ * <li>{@link QuizPanelRight} – right-side list of themes and their
+ * questions</li>
+ * <li>{@link QuizPanelBottom} – bottom control bar with action buttons</li>
+ * </ul>
+ * </p>
  * 
- * Diese Klasse verwaltet die drei Haupt-Panels: links (Frage/Antwort), rechts (Themen/Fragen-Liste) 
- * und unten (Steuerung mit Buttons).
+ * <p>
+ * This panel coordinates the quiz flow by handling events from the bottom panel
+ * through the {@link QuizDelegate} interface, such as showing the correct
+ * answer, saving an answer, or loading a new random question.
+ * </p>
  * 
- * Sie steuert die Steuerungslogik des Quiz:
- * - Laden und Auswählen von Fragen (einschließlich zufälliger Auswahl neuer Fragen)
- * - Anzeige der richtigen Antwort
- * - Sperren der Benutzereingaben nach Speicherung
- * - Kommunikation mit dem QuizDataManager für Daten im Hintergrund
- * 
- * Implementiert das Interface {@link QuizDelegate} für die Button-Callbacks.
+ * @author Oleg Kapirulya
  */
 public class QuizPanel extends JPanel implements QuizDelegate {
 
-    private static final long serialVersionUID = 1L;
+	/** Serial version UID for serialization compatibility. */
+	private static final long serialVersionUID = 1L;
 
-    /** Linkes Panel mit Frage- und Antwort-Eingaben */
-    private QuizPanelLeft quizPanelLeft;
+	/** Left panel showing the current question and answer selection checkboxes. */
+	private final QuizPanelLeft quizPanelLeft;
 
-    /** Rechtes Panel mit Themen- und Fragenauswahl */
-    private QuizPanelRight quizPanelRight;
+	/** Right panel listing available themes and questions. */
+	private final QuizPanelRight quizPanelRight;
 
-    /** Unteres Panel mit Steuerungsbuttons ("Nächste Frage", "Antwort zeigen", "Antwort speichern") */
-    private QuizPanelBottom quizButtonPanel;
+	/** Bottom panel containing gameplay control buttons. */
+	private final QuizPanelBottom quizButtonPanel;
 
-    /** Datenmanager zur Verwaltung der Themen und Fragen */
-    private QuizDataManager dm;
+	/** Data manager for accessing persistent quiz data. */
+	private final QuizDataManager dm;
 
-    /** Zufallsgenerator für die Zufallsauswahl der Fragen */
-    private final Random random = new Random();
+	/** Random generator for selecting questions randomly. */
+	private final Random random = new Random();
 
-    /**
-     * Konstruktor.
-     * 
-     * Initialisiert die drei Sub-Panels, richtet das Layout ein und startet mit der ersten zufälligen Frage.
-     * 
-     * @param dm Instanz des {@link QuizDataManager} für das Datenmanagement
-     */
-    public QuizPanel(QuizDataManager dm) {
-        super();
-        this.dm = dm;
+	/**
+	 * Constructs a new {@code QuizPanel} with all sub-panels initialized and
+	 * linked.
+	 *
+	 * @param dm the {@link QuizDataManager} used for data retrieval and question
+	 *           loading
+	 */
+	public QuizPanel(QuizDataManager dm) {
+		super(new BorderLayout(10, 10));
+		this.dm = dm;
 
-        // Layout mit Abstand zwischen Ländern
-        setLayout(new BorderLayout(10, 10));
+		quizPanelLeft = new QuizPanelLeft(dm);
+		quizPanelRight = new QuizPanelRight(dm);
+		quizButtonPanel = new QuizPanelBottom();
 
-        // Panels erzeugen
-        quizPanelLeft = new QuizPanelLeft(dm);
-        quizPanelRight = new QuizPanelRight(dm);
-        quizButtonPanel = new QuizPanelBottom();
+		// Link left and right panels
+		quizPanelRight.setPanelLeft(quizPanelLeft);
 
-        // Verknüpfungen: QuizPanelRight weiß von QuizPanelLeft
-        quizPanelRight.setPanelLeft(quizPanelLeft);
+		// Make this panel the delegate for the bottom control buttons
+		quizButtonPanel.setDelegate(this);
 
-        // Buttons-Panel bekommt Delegat für Callback-Methoden (onShowAnswer(), onSaveAnswer() etc.)
-        quizButtonPanel.setDelegate(this);
+		// Add panels to the layout
+		add(quizPanelLeft, BorderLayout.WEST);
+		add(quizPanelRight, BorderLayout.EAST);
+		add(quizButtonPanel, BorderLayout.SOUTH);
+	}
 
-        // Panels ins Layout setzen
-        add(quizPanelLeft, BorderLayout.WEST);
-        add(quizPanelRight, BorderLayout.EAST);
-        add(quizButtonPanel, BorderLayout.SOUTH);
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Displays the correct answer for the currently selected question. The correct
+	 * answer is shown via the right panel, and the left panel's message area is
+	 * cleared. The question is marked as 'answered'.
+	 * </p>
+	 */
+	@Override
+	public void onShowAnswer() {
+		Question q = quizPanelRight.getThemaFragenPanel().getFragenList().getSelectedValue();
+		if (q == null) {
+			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_NO_QUESTION_SELECTED);
+			return;
+		}
+		String correctAnswerText = "";
+		for (Answer a : q.getAnswers()) {
+			if (a.isCorrect()) {
+				correctAnswerText = a.getText();
+				break;
+			}
+		}
+		quizPanelRight.getThemaFragenPanel()
+				.showFeedbackAnswer(QuizValidator.MSG_CORRECT_ANSWER_IS + correctAnswerText);
+		quizPanelLeft.getMessageField().setText("");
+		quizPanelRight.markAnswered(q.getId());
+	}
 
-        // Startfrage laden - ruft onNewQuestion() auf
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Marks the current answer as saved by disabling answer checkboxes and updating
+	 * the left panel message field.
+	 * </p>
+	 */
+	@Override
+	public void onSaveAnswer() {
+		quizPanelLeft.setCheckboxesEnabled(false);
+		quizPanelLeft.getMessageField().setText(QuizValidator.MSG_ANSWER_SAVED);
+	}
 
-    }
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Loads a new random question from either the currently selected theme's
+	 * question list or from all available themes, depending on the current theme
+	 * selection. Updates the left panel to display the selected question and
+	 * enables answer checkboxes.
+	 * </p>
+	 */
+	@Override
+	public void onNewQuestion() {
+		quizPanelRight.getThemaFragenPanel().showFragenList();
 
-    /**
-     * Callback-Methode bei Klick auf "Antwort zeigen".
-     * 
-     * Ermittelt die aktuell ausgewählte Frage und zeigt die korrekte Antwort zentral im Fragenpanel an.
-     * Die Fragen-Liste wird dabei ausgeblendet (über CardLayout im ThemaFragenPanel).
-     * Nachrichtenfelder links werden geleert.
-     * 
-     * Wird keine Frage ausgewählt, wird eine passende Fehlermeldung angezeigt.
-     */
-    @Override
-    public void onShowAnswer() {
-        // Ausgewählte Frage aus der Fragenliste rechts abfragen
-        Question currentQuestion = quizPanelRight.getThemaFragenPanel().getFragenList().getSelectedValue();
-        if (currentQuestion == null) {
-            // Keine Frage ausgewählt → Fehlermeldung links
-            quizPanelLeft.getMessageField().setText("Keine Frage ausgewählt.");
-            return;
-        }
+		List<Question> alleFragen = new ArrayList<>();
+		Theme selectedThema = (Theme) quizPanelRight.getThemaFragenPanel().getThemaComboBox().getSelectedItem();
 
-        // Antwortenliste der aktuellen Frage holen
-        List<Answer> answers = currentQuestion.getAnswers();
+		// Collect questions from a specific theme, or all themes if "All themes" is
+		// selected
+		if (selectedThema != null && !"Alle Themen".equals(selectedThema.toString())) {
+			if (selectedThema.getAllQuestions() != null) {
+				alleFragen.addAll(selectedThema.getAllQuestions());
+			}
+		} else {
+			for (Theme t : dm.getAllThemen()) {
+				if (t.getAllQuestions() != null) {
+					alleFragen.addAll(t.getAllQuestions());
+				}
+			}
+		}
 
-        // Indizes der richtigen Antwort ermitteln (erster Treffer)
-        int correctIndex = -1;
-        for (int i = 0; i < answers.size(); i++) {
-            if (answers.get(i).isCorrect()) {
-                correctIndex = i + 1; // Nummerierung ab 1 für Anzeige
-                break;
-            }
-        }
+		// If no questions are available, show a message
+		if (alleFragen.isEmpty()) {
+			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_NO_QUESTIONS_AVAILABLE);
+			return;
+		}
 
-        // Wenn richtige Antwort gefunden wurde, Feedback anzeigen
-        if (correctIndex != -1) {
-            String msg = "<html><center><b>Die richtige Antwort ist:<br>" 
-                + correctIndex  + "</b></center></html>";
+		// Randomly select a question from the available pool
+		Question randomQuestion = alleFragen.get(random.nextInt(alleFragen.size()));
+		quizPanelRight.getThemaFragenPanel().getFragenList().setSelectedValue(randomQuestion, true);
+		quizPanelLeft.setFrage(randomQuestion);
+		quizPanelLeft.getMessageField().setText("");
+		quizPanelLeft.setCheckboxesEnabled(true);
+		quizPanelRight.resetGezeigteAntworten();
+	}
 
-            // Rückmeldung im Fragenpanel anzeigen (Fragenliste wird ausgeblendet)
-            quizPanelRight.getThemaFragenPanel().showFeedbackMessage(msg);
-        }
-
-        // Linkes Nachrichtenfeld leeren, da der Hinweis nun mittig im Panel steht
-        quizPanelLeft.getMessageField().setText("");
-
-        // Frage als beantwortet markieren (optional, z.B. für UI-Status)
-        quizPanelRight.markAnswered(currentQuestion.getId());
-    }
-
-    /**
-     * Callback-Methode bei Klick auf "Antwort speichern".
-     * 
-     * Sperrt danach alle Checkboxen im linken Panel, damit die Antwort nicht mehr verändert wird.
-     * Zeigt optional eine kurze Bestätigungsmeldung an.
-     */
-    @Override
-    public void onSaveAnswer() {
-        // Checkboxen sperren
-        quizPanelLeft.setCheckboxesEnabled(false);
-        // Kleine Info im linken Nachrichtenfeld
-        quizPanelLeft.getMessageField().setText("Antwort gespeichert!");
-    }
-
-    /**
-     * Callback-Methode bei Klick auf "Nächste Frage".
-     * 
-     * Wählt zufällig eine neue Frage aus dem aktuell ausgewählten Thema oder (wenn "Alle Themen" ausgewählt ist) aus allen Fragen.
-     * Stellt diese Frage sowohl im rechten Fragenpanel als auch im linken Eingabepanel dar.
-     * 
-     * Die Feedback-Anzeige wird zurückgesetzt (Fragenliste wird wieder sichtbar).
-     * Nachrichtenfelder werden geleert.
-     * Checkboxen werden wieder aktiviert, damit der Nutzer neue Antworten eingeben kann.
-     */
-    @Override
-    public void onNewQuestion() {
-        // Feedback deaktivieren, Fragenliste wieder anzeigen
-        quizPanelRight.getThemaFragenPanel().showFragenList();
-
-        // Liste aller verfügbaren Fragen (je nach Thema Auswahl) sammeln
-        List<Question> alleFragen = new ArrayList<>();
-
-        Thema selectedThema = (Thema) quizPanelRight.getThemaFragenPanel().getThemaComboBox().getSelectedItem();
-
-        // Filter nach Thema
-        if (selectedThema != null && !"Alle Themen".equals(selectedThema.toString())) {
-            if (selectedThema.getAllQuestions() != null && !selectedThema.getAllQuestions().isEmpty()) {
-                alleFragen.addAll(selectedThema.getAllQuestions());
-            }
-        } else {
-            // Wenn "Alle Themen" ausgewählt → alle Fragen aller Themen nehmen
-            for (Thema t : dm.getAllThemen()) {
-                if (t.getAllQuestions() != null) {
-                    alleFragen.addAll(t.getAllQuestions());
-                }
-            }
-        }
-
-        // Keine Fragen gefunden
-        if (alleFragen.isEmpty()) {
-            quizPanelLeft.getMessageField().setText("Keine Fragen vorhanden.");
-            return;
-        }
-
-        // Zufallsfrage auswählen
-        int idx = random.nextInt(alleFragen.size());
-        Question randomQuestion = alleFragen.get(idx);
-
-        // Frage als Auswahl im rechten Panel setzen (wird angezeigt)
-        quizPanelRight.getThemaFragenPanel().getFragenList().setSelectedValue(randomQuestion, true);
-
-        // Frage im linken Panel (Frage + Antworten) anzeigen
-        quizPanelLeft.setFrage(randomQuestion);
-
-        // Linkes Nachrichtenfeld leeren
-        quizPanelLeft.getMessageField().setText("");
-
-        // Checkboxen wieder aktivieren, damit Nutzer neu tippen kann
-        quizPanelLeft.setCheckboxesEnabled(true);
-
-        // Gezeigte Antworten evtl. zurücksetzen (je nach Implementierung)
-        quizPanelRight.resetGezeigteAntworten();
-    }
-
-	public  QuizPanelRight getQuizPanelRight() {
+	/**
+	 * Returns the right-side quiz panel, which lists available themes and
+	 * questions.
+	 *
+	 * @return the {@link QuizPanelRight} instance
+	 */
+	public QuizPanelRight getQuizPanelRight() {
 		return quizPanelRight;
 	}
 }

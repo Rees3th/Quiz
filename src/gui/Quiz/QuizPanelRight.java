@@ -1,99 +1,101 @@
 package gui.Quiz;
 
-import java.awt.Component;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
-import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
 import gui.Panels.ThemaFragenPanel;
 import persistence.serialization.QuizDataManager;
-import quizLogic.Answer;
 import quizLogic.Question;
-import quizLogic.Thema;
+import quizLogic.Theme;
 
 /**
- * Rechtes Panel im Quizbereich, zeigt Themen und Fragen als Listen. Verwaltung
- * und Anzeige der Fragen erfolgt über ThemaFragenPanel.
+ * {@code QuizPanelRight} represents the right-hand panel in the quiz gameplay
+ * view.
+ * <p>
+ * It displays a list of quiz themes in a combo box and the corresponding list
+ * of questions using a {@link ThemaFragenPanel}. The user can select a theme to
+ * filter the visible questions. Selecting a question updates the linked
+ * {@link QuizPanelLeft} with its details.
+ * </p>
+ *
+ * <p>
+ * This panel is responsible for:
+ * <ul>
+ * <li>Managing the theme combo box and question list display</li>
+ * <li>Synchronizing data with the left-hand panel</li>
+ * <li>Reloading themes/questions when necessary</li>
+ * </ul>
+ * </p>
+ * 
+ * @author Oleg Kapirulya
  */
 public class QuizPanelRight extends JPanel {
+
+	/** Serial version UID for serialization compatibility. */
 	private static final long serialVersionUID = 1L;
 
+	/** The combined UI component for displaying theme and question lists. */
 	private ThemaFragenPanel themaFragenPanel;
-	private QuizDataManager dm;
-	private QuizPanelLeft quizPanelLeft;
-	private Integer aktuellGezeigteFrageId = null;
-	
-	private Integer feedbackFrageId = null;
-	private String feedbackMsg = null;
+
+	/** The data manager for accessing themes and their questions. */
+	private final QuizDataManager dm;
 
 	/**
-	 * Konstruktor, baut das Panel mit Themenselektion und Fragenliste auf.
+	 * Reference to the left-hand panel to display the selected question's details.
+	 */
+	private QuizPanelLeft quizPanelLeft;
+
+	/** ID of the currently shown (answered) question, or {@code null} if none. */
+	private Integer aktuellGezeigteFrageId = null;
+
+	/**
+	 * Constructs a new {@code QuizPanelRight}.
+	 * <p>
+	 * Sets up the panel with theme selection, question list, and event listeners.
+	 * </p>
+	 *
+	 * @param dm the {@link QuizDataManager} used for loading themes and questions
 	 */
 	public QuizPanelRight(QuizDataManager dm) {
 		this.dm = dm;
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBorder(new EmptyBorder(10, 10, 10, 10));
 
-		List<Thema> themenListe = new ArrayList<>(dm.getAllThemen());
+		List<Theme> themenListe = new ArrayList<>(dm.getAllThemen());
 		themaFragenPanel = new ThemaFragenPanel(themenListe);
-
-		// Renderer: Zeigt die richtige Antwort nach Klick auf "Antwort zeigen"
-		themaFragenPanel.getFragenList().setCellRenderer(new DefaultListCellRenderer() {
-		    @Override
-		    public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
-		            boolean cellHasFocus) {
-		        JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-		        if (value instanceof Question) {
-		            Question q = (Question) value;
-		            String text = q.getTitle();
-		            if (feedbackFrageId != null && q.getId() == feedbackFrageId && feedbackMsg != null) {
-		                StringBuilder sb = new StringBuilder("<html>");
-		                sb.append("<b>").append(text).append("</b><br>");
-		                List<Answer> answers = new ArrayList<>(q.getAnswers());
-		                int nr = 1;
-		                for (Answer a : answers) {
-		                    sb.append(nr++).append(". ").append(a.getText());
-		                    if (a.isCorrect()) sb.append(" (richtig)");
-		                    sb.append("<br>");
-		                }
-		                sb.append("<b><span style='color:").append(feedbackMsg.contains("Richtig") ? "green" : "red").append(";'>")
-		                  .append(feedbackMsg).append("</span></b></html>");
-		                label.setText(sb.toString());
-		            } else {
-		                label.setText(text);
-		            }
-		        } else {
-		            label.setText("");
-		        }
-		        label.setVerticalTextPosition(SwingConstants.TOP);
-		        return label;
-		    }
-		});
-
 		add(themaFragenPanel);
+
+		// Hide unused UI elements for quiz gameplay
 		themaFragenPanel.getThemaInfoButton().setVisible(false);
 		themaFragenPanel.getInfoTitelLbl().setVisible(false);
 		themaFragenPanel.getFragenLabel().setVisible(false);
+
 		add(Box.createVerticalStrut(15));
 
 		setupEvents();
+
+		// Select first theme and populate questions
 		themaFragenPanel.getThemaComboBox().setSelectedIndex(0);
 		updateFragenList(ThemaFragenPanel.ALLE_THEMEN);
 	}
 
-	/** Setzt Eventlistener für ComboBox und Fragenliste. */
+	/**
+	 * Sets up event listeners for the theme combo box and question list.
+	 * <ul>
+	 * <li>Theme change → updates question list, syncs theme in left panel, and
+	 * resets answers.</li>
+	 * <li>Question selection → updates question details in left panel.</li>
+	 * </ul>
+	 */
 	private void setupEvents() {
 		themaFragenPanel.getThemaComboBox().addActionListener(e -> {
-			Thema selected = (Thema) themaFragenPanel.getThemaComboBox().getSelectedItem();
+			Theme selected = (Theme) themaFragenPanel.getThemaComboBox().getSelectedItem();
 			updateFragenList(selected);
 			if (quizPanelLeft != null && selected != null) {
 				quizPanelLeft.setThema(selected);
@@ -113,13 +115,21 @@ public class QuizPanelRight extends JPanel {
 	}
 
 	/**
-	 * Aktualisiert die Liste der Fragen im Panel je nach ausgewähltem Thema.
+	 * Updates the list of questions shown based on the selected theme.
+	 * <ul>
+	 * <li>If "All themes" is selected, loads questions from all themes.</li>
+	 * <li>Otherwise, loads only questions from the selected theme.</li>
+	 * </ul>
+	 *
+	 * @param selectedThema the {@link Theme} selected in the combo box
 	 */
-	private void updateFragenList(Thema selectedThema) {
+	private void updateFragenList(Theme selectedThema) {
+		@SuppressWarnings("unchecked")
 		DefaultListModel<Question> model = (DefaultListModel<Question>) themaFragenPanel.getFragenList().getModel();
 		model.clear();
+
 		if (selectedThema != null && "Alle Themen".equals(selectedThema.toString())) {
-			for (Thema thema : dm.getAllThemen()) {
+			for (Theme thema : dm.getAllThemen()) {
 				if (thema.getAllQuestions() != null) {
 					for (Question q : thema.getAllQuestions()) {
 						model.addElement(q);
@@ -134,47 +144,51 @@ public class QuizPanelRight extends JPanel {
 	}
 
 	/**
-	 * Lädt alle Themen und Fragen neu und setzt auf "Alle Themen".
+	 * Reloads all themes and questions and resets selection to "All themes".
 	 */
 	public void reloadAllThemenUndFragen() {
-	    List<Thema> alleThemenListe = new ArrayList<>(dm.getAllThemen());
-	    alleThemenListe.removeIf(t -> t == ThemaFragenPanel.ALLE_THEMEN);
-	    themaFragenPanel.setThemen(alleThemenListe);
-	    themaFragenPanel.getThemaComboBox().setSelectedIndex(0);
-	    updateFragenList(ThemaFragenPanel.ALLE_THEMEN);
-	    resetGezeigteAntworten();
-	    themaFragenPanel.getFragenList().repaint();
+		List<Theme> alleThemenListe = new ArrayList<>(dm.getAllThemen());
+		alleThemenListe.removeIf(t -> t == ThemaFragenPanel.ALLE_THEMEN);
+		themaFragenPanel.setThemen(alleThemenListe);
+		themaFragenPanel.getThemaComboBox().setSelectedIndex(0);
+		updateFragenList(ThemaFragenPanel.ALLE_THEMEN);
+		resetGezeigteAntworten();
+		themaFragenPanel.getFragenList().repaint();
 	}
 
-	
-	public void setFeedback(int frageId, String msg) {
-	    feedbackFrageId = frageId;
-	    feedbackMsg = msg;
-	    themaFragenPanel.getFragenList().repaint();
-	}
-
-	// Verbindung mit dem linken Panel
+	/**
+	 * Sets the reference to the left panel to allow updating displayed question
+	 * details.
+	 *
+	 * @param panel the {@link QuizPanelLeft} to link with this panel
+	 */
 	public void setPanelLeft(QuizPanelLeft panel) {
 		this.quizPanelLeft = panel;
 	}
 
-	// Getter für das ThemaFragenPanel
+	/**
+	 * Returns the internal {@link ThemaFragenPanel} instance for further
+	 * customization.
+	 *
+	 * @return the {@link ThemaFragenPanel} for this panel
+	 */
 	public ThemaFragenPanel getThemaFragenPanel() {
 		return themaFragenPanel;
 	}
 
-
-	// Markiert eine Frage als beantwortet, um die Antworten einzublenden
+	/**
+	 * Marks a question as answered so its answers can be displayed.
+	 *
+	 * @param questionId the ID of the answered question
+	 */
 	public void markAnswered(int questionId) {
 		aktuellGezeigteFrageId = questionId;
 	}
 
-	// Entfernt eine Markierung, sodass keine Antworten mehr angezeigt werden
+	/**
+	 * Resets the answered state so that answers will not be displayed anymore.
+	 */
 	public void resetGezeigteAntworten() {
 		aktuellGezeigteFrageId = null;
-	}
-	public void clearFeedback() {
-	    feedbackFrageId = null;
-	    feedbackMsg = null;
 	}
 }

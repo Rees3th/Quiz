@@ -12,12 +12,12 @@ public class Question extends DataAccessObject {
 
     private String title;
     private String text;
-    private Thema thema;
+    private Theme thema;
 
 
     private Map<Integer, Answer> answerMap = new LinkedHashMap<>();
 
-    public Question(Thema thema) {
+    public Question(Theme thema) {
         super();
         this.thema = thema;
   
@@ -29,8 +29,8 @@ public class Question extends DataAccessObject {
     public String getText() { return text; }
     public void setText(String text) { this.text = text; }
 
-    public Thema getThema() { return thema; }
-    public void setThema(Thema thema) { this.thema = thema; }
+    public Theme getThema() { return thema; }
+    public void setThema(Theme thema) { this.thema = thema; }
 
     public void addAnswer(Answer a) {
         if (a != null) {

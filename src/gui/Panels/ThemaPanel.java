@@ -2,7 +2,6 @@ package gui.Panels;
 
 import java.awt.Dimension;
 import java.util.Collection;
-import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -13,70 +12,109 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
-import quizLogic.Thema;
+import quizLogic.Theme;
 
 /**
- * ThemaPanel ist ein JPanel, das eine Liste von Themen anzeigt. Es ermöglicht
- * die Anzeige und Auswahl von Themen in einer JList.
+ * {@code ThemaPanel} is a reusable UI panel that displays a list of quiz
+ * themes.
+ * <p>
+ * It provides a scrollable {@link JList} for viewing and selecting available
+ * {@link Theme} objects. The panel is intended to be embedded in larger views
+ * such as theme management or quiz gameplay panels.
+ * </p>
+ *
+ * <p>
+ * <b>Main responsibilities:</b>
+ * </p>
+ * <ul>
+ * <li>Display a themed label and a scrollable list of themes</li>
+ * <li>Allow the theme list to be dynamically updated via
+ * {@link #setThemen(Collection)}</li>
+ * <li>Provide access to the underlying {@link JList} for event handling</li>
+ * </ul>
+ * 
+ * <p>
+ * The list contents are backed by a {@link DefaultListModel}, making it easy to
+ * update or clear the displayed themes.
+ * </p>
+ * 
+ * @author Oleg Kapirulya
  */
 public class ThemaPanel extends JPanel {
 
+	/** Serial version UID for serialization compatibility. */
 	private static final long serialVersionUID = 1L;
-	private JList<Thema> themenList;
-	private DefaultListModel<Thema> themenModel;
+
+	/** The JList displaying the current list of themes. */
+	private JList<Theme> themenList;
+
+	/** The list model holding the theme data. */
+	private DefaultListModel<Theme> themenModel;
 
 	/**
-	 * Konstruktor, der ein leeres ThemaPanel erstellt. Die Themenliste wird
-	 * initialisiert, aber noch nicht befüllt.
+	 * Creates a new {@code ThemaPanel} with an initially populated list of themes.
+	 * <p>
+	 * The layout places a label at the top and the scrollable theme list below it.
+	 * </p>
+	 *
+	 * @param themen the initial collection of themes to display; may be
+	 *               {@code null} or empty
 	 */
-
-	public ThemaPanel(Collection<Thema> themen) {
+	public ThemaPanel(Collection<Theme> themen) {
 		super();
-
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-		JLabel lbl = new JLabel("Themen");
+		// Label for the theme list
+		JLabel lbl = new JLabel("Themes");
 		lbl.setPreferredSize(new Dimension(80, 16));
 		lbl.setAlignmentX(LEFT_ALIGNMENT);
 		add(lbl);
 		add(Box.createVerticalStrut(40));
 
+		// Initialize the list and model
 		themenModel = new DefaultListModel<>();
 		themenList = new JList<>(themenModel);
 		themenList.setVisibleRowCount(10);
 
+		// Add the list inside a scroll pane
 		JScrollPane scroll = new JScrollPane(themenList);
 		scroll.setPreferredSize(new Dimension(220, 170));
 		scroll.setAlignmentX(LEFT_ALIGNMENT);
 		add(scroll);
 
+		// Populate with initial themes, if any
 		setThemen(themen);
 	}
 
 	/**
-	 * Setzt die Themen in der JList. Die vorherigen Themen werden entfernt.
-	 * 
-	 * @param themen Collection von Thema-Objekten, die in der Liste angezeigt
-	 *               werden sollen
+	 * Updates the displayed list of themes.
+	 * <p>
+	 * Clears any previously shown themes before adding the new collection.
+	 * </p>
+	 *
+	 * @param themen a collection of {@link Theme} objects to display; if
+	 *               {@code null}, the list is cleared
 	 */
-
-	public void setThemen(Collection<Thema> themen) {
+	public void setThemen(Collection<Theme> themen) {
 		themenModel.clear();
 		if (themen != null) {
-			for (Thema t : themen) {
+			for (Theme t : themen) {
 				themenModel.addElement(t);
 			}
 		}
 	}
 
 	/**
-	 * Gibt die JList zurück, die die Themen anzeigt.
-	 * 
-	 * @return JList von Thema-Objekten
+	 * Returns the JList that displays the themes.
+	 * <p>
+	 * This allows external components to register listeners or customize selection
+	 * behavior.
+	 * </p>
+	 *
+	 * @return the {@link JList} of {@link Theme} objects
 	 */
-
-	public JList<Thema> getThemenList() {
+	public JList<Theme> getThemenList() {
 		return themenList;
 	}
 }

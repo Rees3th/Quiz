@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import persistence.QuizDataInterface;
 import quizLogic.Answer;
 import quizLogic.Question;
-import quizLogic.Thema;
+import quizLogic.Theme;
 
 public class QuizDataManager implements QuizDataInterface {
 
@@ -34,15 +34,15 @@ public class QuizDataManager implements QuizDataInterface {
 	}
 
 	@Override
-	public ArrayList<Thema> getAllThemen() {
-		ArrayList<Thema> themen = new ArrayList<Thema>();
+	public ArrayList<Theme> getAllThemen() {
+		ArrayList<Theme> themen = new ArrayList<Theme>();
 		
 		File folder = new File(FOLDER);
 		File[] files = folder.listFiles((dir, name) -> name.startsWith("Theme."));
 		if (files != null) {
 			for (File file : files) {
 				try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
-					Thema thema = (Thema) ois.readObject();
+					Theme thema = (Theme) ois.readObject();
 					themen.add(thema);
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
@@ -53,7 +53,7 @@ public class QuizDataManager implements QuizDataInterface {
 	}
 
 	@Override
-	public String saveTheme(Thema th) {
+	public String saveTheme(Theme th) {
 		if (th == null)
 			return "Kein Thema zum Speichern";
 
@@ -75,7 +75,7 @@ public class QuizDataManager implements QuizDataInterface {
 	}
 
 	@Override
-	public String deleteTheme(Thema th) {
+	public String deleteTheme(Theme th) {
 		if (th == null || th.getId() == -1)
 			return "Ungültiges Thema";
 
@@ -117,12 +117,12 @@ public class QuizDataManager implements QuizDataInterface {
 		return maxId + 1;
 	}
 	
-	public static Thema readById(int id) {
-		Thema theme = null;
+	public static Theme readById(int id) {
+		Theme theme = null;
 		try {
 			FileInputStream fileInputStream = new FileInputStream(FILE + id);
 			ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
-			theme = (Thema) objectInputStream.readObject();
+			theme = (Theme) objectInputStream.readObject();
 			objectInputStream.close();
 			return theme;
 		} catch (ClassNotFoundException | IOException e) {
@@ -136,7 +136,7 @@ public class QuizDataManager implements QuizDataInterface {
 		return null;
 	}
 
-	public ArrayList<Question> getQuestionsFor(Thema th) {
+	public ArrayList<Question> getQuestionsFor(Theme th) {
 		if (th != null)
 			return new ArrayList<>(th.getAllQuestions());
 		return new ArrayList<>();
@@ -157,7 +157,7 @@ public class QuizDataManager implements QuizDataInterface {
 		if (q == null || q.getThema() == null)
 			return "Frage oder Thema ungültig";
 
-		Thema thema = q.getThema();
+		Theme thema = q.getThema();
 
 		if (q.getId() == -1) {
 			q.setId(getNextQuestionId());
@@ -190,7 +190,7 @@ public class QuizDataManager implements QuizDataInterface {
 		if (files != null) {
 			for (File file : files) {
 				try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
-					Thema thema = (Thema) ois.readObject();
+					Theme thema = (Theme) ois.readObject();
 					for (Question q : thema.getAllQuestions()) {
 						if (q.getId() > maxQ)
 							maxQ = q.getId();
@@ -212,7 +212,7 @@ public class QuizDataManager implements QuizDataInterface {
 	@Override
 	public String deleteQuestion(Question q) {
 		if (q != null && q.getThema() != null) {
-			Thema thema = q.getThema();
+			Theme thema = q.getThema();
 			thema.removeQuestionById(q.getId());
 			return saveTheme(thema);
 		}
