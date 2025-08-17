@@ -1,198 +1,200 @@
 package gui.QuizFragen;
 
 import java.awt.BorderLayout;
-import java.util.ArrayList;
+import java.util.List;
+
 import javax.swing.JPanel;
 
-import persistence.serialization.QuizDataManager;
+import persistence.DBDataManager;
 import quizLogic.Question;
 import quizLogic.QuestionValidator;
 import quizLogic.Theme;
 
 /**
- * {@code QuizQuestionPanel} is the main panel for managing quiz questions.
+ * {@code QuizQuestionPanel} is the main container panel for managing quiz
+ * questions (create, edit, delete).
+ *
  * <p>
- * This panel combines:
+ * It combines three sub-panels:
+ * </p>
  * <ul>
- *     <li>{@link QuizQuestionLeft} – left form for editing a question</li>
- *     <li>{@link QuizQuestionRight} – right selection area for themes and questions</li>
- *     <li>{@link QuizQuestionBottom} – bottom action bar with save, new, and delete buttons</li>
+ * <li>{@link QuizQuestionLeft} – left-side editor form</li>
+ * <li>{@link QuizQuestionRight} – right-side theme and question list</li>
+ * <li>{@link QuizQuestionBottom} – bottom action bar (Save/New/Delete)</li>
  * </ul>
- * It coordinates loading, saving, and deleting questions via the {@link QuizDataManager}
- * and updates the display accordingly.
- * </p>
+ *
  * <p>
- * Implements {@link QuizQuestionDelegate} to respond to user actions.
+ * <b>Responsibilities:</b>
  * </p>
+ * <ul>
+ * <li>Coordinating interaction between left form and right list</li>
+ * <li>Handling persistence via {@link DBDataManager}</li>
+ * <li>Acting as a {@link QuizQuestionDelegate} for button actions</li>
+ * </ul>
  * 
  * @author Oleg Kapirulya
  */
 public class QuizQuestionPanel extends JPanel implements QuizQuestionDelegate {
+	private static final long serialVersionUID = 1L;
 
-    /** Serial version UID for serialization compatibility. */
-    private static final long serialVersionUID = 1L;
+	/** Left-side editor form for a single question. */
+	private QuizQuestionLeft quizQuestionLeft;
 
-    /** Left form panel for question editing. */
-    private QuizQuestionLeft quizFragenLeft;
+	/** Right-side panel with theme and question list. */
+	private QuizQuestionRight quizQuestionRight;
 
-    /** Right panel for selecting themes and questions. */
-    private QuizQuestionRight quizFragenRight;
+	/** Bottom control/action bar. */
+	private QuizQuestionBottom quizQuestionBottom;
 
-    /** Bottom panel with control buttons and message display. */
-    private QuizQuestionBottom quizFragenBottom;
+	/** Database manager for loading/saving/deleting questions and themes. */
+	private final DBDataManager dm;
 
-    /** Data manager for loading and saving questions and themes. */
-    private final QuizDataManager dm;
+	/**
+	 * Constructs a new {@code QuizQuestionPanel}.
+	 *
+	 * @param dm the {@link DBDataManager} to use for persistence operations
+	 */
+	public QuizQuestionPanel(DBDataManager dm) {
+		this.dm = dm;
+		initLayout();
+		initComponents();
+		linkComponents();
+		setDelegate();
+		reloadThemes(); // load initial data
+	}
 
-    /**
-     * Creates a new {@code QuizQuestionPanel}.
-     *
-     * @param dm the {@link QuizDataManager} used for data manipulation
-     */
-    public QuizQuestionPanel(QuizDataManager dm) {
-        this.dm = dm;
-        initLayout();
-        initComponents();
-        linkComponents();
-        setDelegate();
-    }
+	/** Configure the panel layout. */
+	private void initLayout() {
+		setLayout(new BorderLayout(10, 10));
+	}
 
-    /**
-     * Initializes the panel's layout.
-     * <p>
-     * Sets a {@link BorderLayout} with 10-pixel gaps.
-     * </p>
-     */
-    private void initLayout() {
-        setLayout(new BorderLayout(10, 10));
-    }
+	/** Instantiate sub-panels. */
+	private void initComponents() {
+		quizQuestionLeft = new QuizQuestionLeft(dm);
+		quizQuestionRight = new QuizQuestionRight(dm);
+		quizQuestionBottom = new QuizQuestionBottom();
+	}
 
-    /**
-     * Creates the main sub-panels (left, right, bottom).
-     */
-    private void initComponents() {
-        quizFragenLeft = new QuizQuestionLeft(dm);
-        quizFragenRight = new QuizQuestionRight(dm);
-        quizFragenBottom = new QuizQuestionBottom();
-    }
+	/**
+	 * Link left and right panels, and arrange all sub-components.
+	 */
+	private void linkComponents() {
+		quizQuestionRight.setPanelLeft(quizQuestionLeft);
+		quizQuestionLeft.setPanelRight(quizQuestionRight);
 
-    /**
-     * Links the left and right panels so they can update each other
-     * and adds all sub-panels to the main layout.
-     */
-    private void linkComponents() {
-        quizFragenRight.setPanelLeft(quizFragenLeft);
-        quizFragenLeft.setPanelRight(quizFragenRight);
-        add(quizFragenLeft, BorderLayout.WEST);
-        add(quizFragenRight, BorderLayout.EAST);
-        add(quizFragenBottom, BorderLayout.SOUTH);
-    }
+		add(quizQuestionLeft, BorderLayout.WEST);
+		add(quizQuestionRight, BorderLayout.EAST);
+		add(quizQuestionBottom, BorderLayout.SOUTH);
+	}
 
-    /**
-     * Sets this panel as the current {@link QuizQuestionDelegate} for the bottom panel,
-     * so button events (save, new, delete) are handled here.
-     */
-    private void setDelegate() {
-        quizFragenBottom.setDelegate(this);
-    }
+	/** Register this panel as delegate for bottom control bar. */
+	private void setDelegate() {
+		quizQuestionBottom.setDelegate(this);
+	}
 
-    // ------------------- Public API -------------------
+	// ------------------- QuizQuestionDelegate Methods -------------------
 
-    /**
-     * {@inheritDoc}
-     * Saves the question currently entered in the form.
-     * <p>
-     * Workflow:
-     * <ol>
-     *     <li>Retrieve the currently selected theme and form data</li>
-     *     <li>Validate the question using {@link QuestionValidator}</li>
-     *     <li>Save the question via {@link QuizDataManager#saveQuestion(Question)}</li>
-     *     <li>Reload the question list for the selected theme</li>
-     * </ol>
-     * </p>
-     */
-    @Override
-    public void onSaveQuestion() {
-        Theme selectedThema = (Theme) quizFragenRight.getThemaFragenPanel()
-                                                     .getThemaComboBox()
-                                                     .getSelectedItem();
+	/**
+	 * Saves the current question entered in the left form.
+	 * <p>
+	 * Workflow:
+	 * </p>
+	 * <ol>
+	 * <li>Get selected theme + form data</li>
+	 * <li>Validate with {@link QuestionValidator}</li>
+	 * <li>If valid → save in DB via {@link DBDataManager}</li>
+	 * <li>Refresh question list and clear form</li>
+	 * </ol>
+	 */
+	@Override
+	public void onSaveQuestion() {
+		Theme selectedThema = (Theme) quizQuestionRight.getThemaFragenPanel().getThemaComboBox().getSelectedItem();
 
-        Question q = quizFragenLeft.getSelectedQuestion(selectedThema);
+		Question q = quizQuestionLeft.getSelectedQuestion(selectedThema);
 
-        // Perform business logic validation
-        String validationError = QuestionValidator.validate(q, selectedThema, q);
-        if (validationError != null) {
-            quizFragenBottom.getMessagePanel().setText(validationError);
-            return;
-        }
+		// Validate input data
+		String validationError = QuestionValidator.validate(q, selectedThema, q);
+		if (validationError != null) {
+			quizQuestionBottom.getMessagePanel().setText(validationError);
+			return;
+		}
 
-        String err = dm.saveQuestion(q);
-        if (err != null) {
-            quizFragenBottom.getMessagePanel()
-                            .setText(QuestionValidator.MSG_SAVE_ERROR_PREFIX + err);
-            return;
-        }
+		// Save in DB
+		String result = dm.saveQuestion(q);
+		if (result != null) {
+			quizQuestionBottom.getMessagePanel().setText(QuestionValidator.MSG_SAVE_ERROR_PREFIX + result);
+			return;
+		}
 
-        reloadFragenForThema(selectedThema);
-        quizFragenBottom.getMessagePanel()
-                        .setText(QuestionValidator.MSG_SAVE_SUCCESS);
-    }
+		// On success: refresh and clear
+		reloadQuestionsForTheme(q.getThema());
+		quizQuestionLeft.setFrage(null);
+		quizQuestionBottom.getMessagePanel().setText(QuestionValidator.MSG_SAVE_SUCCESS);
+	}
 
-    /**
-     * {@inheritDoc}
-     * Deletes the currently selected question from the selected theme.
-     * <p>
-     * If no valid question/theme is selected, a validation message is displayed.
-     * </p>
-     */
-    @Override
-    public void onDeleteQuestion() {
-        Question q = quizFragenRight.getSelectedQuestion();
-        if (q == null || q.getThema() == null) {
-            quizFragenBottom.getMessagePanel()
-                            .setText(QuestionValidator.MSG_DELETE_INVALID_SELECTION);
-            return;
-        }
+	/**
+	 * Deletes the currently selected question from DB. Shows error messages if
+	 * selection is invalid or deletion fails.
+	 */
+	@Override
+	public void onDeleteQuestion() {
+		Question q = quizQuestionRight.getSelectedQuestion();
 
-        String result = dm.deleteQuestion(q);
-        if (result != null) {
-            quizFragenBottom.getMessagePanel()
-                            .setText(QuestionValidator.MSG_DELETE_ERROR_PREFIX + result);
-        } else {
-            reloadFragenForThema(q.getThema());
-            quizFragenLeft.setFrage(null);
-        }
-    }
+		if (q == null || q.getThema() == null) {
+			quizQuestionBottom.getMessagePanel().setText(QuestionValidator.MSG_DELETE_INVALID_SELECTION);
+			return;
+		}
 
-    /**
-     * {@inheritDoc}
-     * Prepares the creation of a new question by clearing the left form
-     * and resetting the right panel's selection.
-     */
-    @Override
-    public void onNewQuestion() {
-        quizFragenLeft.setFrage(null);
-        quizFragenRight.getThemaFragenPanel().getFragenList().clearSelection();
-    }
+		String result = dm.deleteQuestion(q);
+		if (result != null) {
+			quizQuestionBottom.getMessagePanel().setText(QuestionValidator.MSG_DELETE_ERROR_PREFIX + result);
+		} else {
+			reloadQuestionsForTheme(q.getThema());
+			quizQuestionLeft.setFrage(null);
+		}
+	}
 
-    /**
-     * Reloads the list of available themes in the right panel.
-     */
-    public void reloadThemen() {
-        ArrayList<Theme> themen = dm.getAllThemen();
-        quizFragenRight.reloadThemen(themen);
-    }
+	/**
+	 * Prepares form for a brand new question by clearing both left form and right
+	 * selection.
+	 */
+	@Override
+	public void onNewQuestion() {
+		quizQuestionLeft.setFrage(null);
+		quizQuestionRight.getThemaFragenPanel().getFragenList().clearSelection();
+	}
 
-    /**
-     * Reloads all questions for a given {@link Theme} and displays them in the right panel.
-     *
-     * @param thema the theme for which to refresh the question list
-     */
-    private void reloadFragenForThema(Theme thema) {
-        if (thema == null) {
-            return;
-        }
-        ArrayList<Question> fragen = dm.getQuestionsFor(thema);
-        quizFragenRight.reloadFragen(fragen);
-    }
+	// ------------------- Data Sync Methods -------------------
+
+	/**
+	 * Reloads all themes from DB and refreshes the right panel.
+	 */
+	public void reloadThemes() {
+		List<Theme> themes = dm.getAllThemes();
+		quizQuestionRight.setThemen(themes);
+	}
+
+	/**
+	 * Reload all questions for a given theme from DB and update right panel.
+	 * 
+	 * @param theme the theme whose questions to reload
+	 */
+	public void reloadQuestionsForTheme(Theme theme) {
+		if (theme == null) {
+			quizQuestionRight.setFragen(List.of());
+			return;
+		}
+		List<Question> fragen = dm.getQuestionsFor(theme);
+		quizQuestionRight.setFragen(fragen);
+	}
+
+	/**
+	 * Directly set the list of questions in the right panel. Useful for external
+	 * updates.
+	 *
+	 * @param questions questions to show
+	 */
+	public void setQuestions(List<Question> questions) {
+		quizQuestionRight.setFragen(questions);
+	}
 }

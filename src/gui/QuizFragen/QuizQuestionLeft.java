@@ -2,7 +2,6 @@ package gui.QuizFragen;
 
 import java.awt.Dimension;
 import java.util.List;
-
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -11,218 +10,247 @@ import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-
 import gui.Panels.AnswerHeaderPanel;
 import gui.Panels.AnswerRowPanel;
 import gui.Panels.FragePanel;
 import gui.Panels.LabelFieldPanel;
-import persistence.serialization.QuizDataManager;
+import persistence.DBDataManager;
 import quizLogic.Answer;
 import quizLogic.Question;
 import quizLogic.Theme;
 
 /**
- * {@code QuizQuestionLeft} is the left-side panel in the quiz question management view.
+ * {@code QuizQuestionLeft} is the left-side panel in the quiz **question
+ * management** view (different from quiz gameplay).
+ *
  * <p>
- * This panel is responsible for displaying and editing the details of a single quiz question,
- * including:
- * <ul>
- *     <li>The associated theme</li>
- *     <li>Question title</li>
- *     <li>Question text</li>
- *     <li>Up to four possible answers, each of which may be marked as correct</li>
- * </ul>
+ * This panel provides both display and editing capabilities for a single quiz
+ * question. It represents a form with:
  * </p>
- * 
- * <p><b>Main functions:</b></p>
  * <ul>
- *     <li>Enter a new question</li>
- *     <li>Edit an existing question</li>
- *     <li>Convert form data into a {@link Question} object</li>
+ * <li>Associated theme (read-only, injected externally)</li>
+ * <li>Question title input</li>
+ * <li>Question text input</li>
+ * <li>Up to four possible answers, each with a "correct" checkbox</li>
  * </ul>
- * 
+ *
+ * <p>
+ * <b>Primary responsibilities:</b>
+ * </p>
+ * <ul>
+ * <li>Creating new questions by filling out the form</li>
+ * <li>Editing and updating existing questions</li>
+ * <li>Converting user-entered form data into a {@link Question} object</li>
+ * <li>Clearing or resetting the form when needed</li>
+ * </ul>
+ *
+ * <p>
+ * UI layout is structured using {@link BoxLayout} with helper classes like
+ * {@link LabelFieldPanel}, {@link FragePanel}, {@link AnswerHeaderPanel}, and
+ * {@link AnswerRowPanel}.
+ * </p>
+ *
+ * <p>
+ * Data persistence and retrieval are handled externally through
+ * {@link DBDataManager}.
+ * </p>
+ *
  * @author Oleg Kapirulya
  */
 public class QuizQuestionLeft extends JPanel {
+	/** Serial version UID for serialization compatibility. */
+	private static final long serialVersionUID = 1L;
 
-    /** Serial version UID for serialization compatibility. */
-    private static final long serialVersionUID = 1L;
+	/** Text field showing the selected theme (read-only). */
+	private JTextField themaField;
 
-    /** Text field showing the selected theme (read-only). */
-    private JTextField themaField;
+	/** Field for entering the question title. */
+	private JTextField titelField;
 
-    /** Field for entering the question title. */
-    private JTextField titelField;
+	/** Text area for entering the main question text. */
+	private JTextArea frageArea;
 
-    /** Text area for entering the question text. */
-    private JTextArea frageArea;
+	/** Input fields for up to 4 possible answer texts. */
+	private JTextField[] answerFields = new JTextField[4];
 
-    /** Fields for entering answer text. */
-    private JTextField[] answerFields = new JTextField[4];
+	/** Checkboxes for marking whether each corresponding answer is correct. */
+	private JCheckBox[] checkboxes = new JCheckBox[4];
 
-    /** Checkboxes for marking whether each answer is correct. */
-    private JCheckBox[] checkboxes = new JCheckBox[4];
+	/** Data manager for persistence and DB access. */
+	private final DBDataManager dm;
 
-    /** Data manager providing access to quiz data. */
-    private final QuizDataManager dm;
+	/**
+	 * Creates a new panel for entering and editing quiz questions.
+	 *
+	 * @param dm the {@link DBDataManager} instance used for data access
+	 */
+	public QuizQuestionLeft(DBDataManager dm) {
+		this.dm = dm;
+		initPanel();
+		initComponents();
+		layoutComponents();
+	}
 
-    /**
-     * Creates a new panel for entering and editing quiz questions.
-     *
-     * @param dm the {@link QuizDataManager} used for data access
-     */
-    public QuizQuestionLeft(QuizDataManager dm) {
-        this.dm = dm;
-        initPanel();
-        initComponents();
-        layoutComponents();
-    }
+	// ------------------- Initialization -------------------
 
-    // ------------------- Initialization -------------------
+	/**
+	 * Initializes base panel properties and layout strategy.
+	 * <p>
+	 * Uses a vertical {@link BoxLayout}, defines padding and size constraints.
+	 * </p>
+	 */
+	private void initPanel() {
+		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+		setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		setMaximumSize(new Dimension(500, 500));
+		setPreferredSize(new Dimension(450, 500));
+	}
 
-    /**
-     * Initializes basic layout settings for this panel.
-     * <p>Uses a vertical {@link BoxLayout} and sets preferred sizes.</p>
-     */
-    private void initPanel() {
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        setMaximumSize(new Dimension(500, 500));
-        setPreferredSize(new Dimension(450, 500));
-    }
+	/**
+	 * Creates all UI components required for this panel. - Theme field (read-only,
+	 * 1 line) - Title field (editable, 1 line) - Question text area (multi-line
+	 * input) - Four answer rows (editable text + checkbox each)
+	 */
+	private void initComponents() {
+		themaField = new JTextField(27);
+		themaField.setEditable(false);
 
-    /**
-     * Creates all UI components (text fields, checkboxes, text area).
-     */
-    private void initComponents() {
-        themaField = new JTextField(27);
-        themaField.setEditable(false);
+		titelField = new JTextField(27);
 
-        titelField = new JTextField(27);
+		frageArea = new JTextArea(6, 24);
 
-        frageArea = new JTextArea(6, 24);
+		for (int i = 0; i < 4; i++) {
+			answerFields[i] = new JTextField(23);
+			checkboxes[i] = new JCheckBox();
+		}
+	}
 
-        for (int i = 0; i < 4; i++) {
-            answerFields[i] = new JTextField(23);
-            checkboxes[i] = new JCheckBox();
-        }
-    }
+	/**
+	 * Adds all created components into the panel in logical, user-friendly order.
+	 *
+	 * <ol>
+	 * <li>Theme field</li>
+	 * <li>Title field</li>
+	 * <li>Question text area</li>
+	 * <li>Answer rows (with checkbox for "correct")</li>
+	 * </ol>
+	 */
+	private void layoutComponents() {
+		add(new LabelFieldPanel("Theme:", themaField));
+		add(Box.createVerticalStrut(10));
 
-    /**
-     * Adds all created components to the panel in a logical order.
-     * <p>
-     * Structure:
-     * <ol>
-     *   <li>Theme</li>
-     *   <li>Title</li>
-     *   <li>Question text</li>
-     *   <li>Answers with correct-marking checkboxes</li>
-     * </ol>
-     * </p>
-     */
-    private void layoutComponents() {
-        add(new LabelFieldPanel("Theme:", themaField));
-        add(Box.createVerticalStrut(10));
-        add(new LabelFieldPanel("Title:", titelField));
-        add(Box.createVerticalStrut(10));
-        add(new FragePanel(frageArea));
-        add(Box.createVerticalStrut(15));
-        add(new AnswerHeaderPanel());
-        add(Box.createVerticalStrut(8));
-        for (int i = 0; i < 4; i++) {
-            add(new AnswerRowPanel(i + 1, answerFields[i], checkboxes[i]));
-            add(Box.createVerticalStrut(8));
-        }
-    }
+		add(new LabelFieldPanel("Title:", titelField));
+		add(Box.createVerticalStrut(10));
 
-    // ------------------- Public API -------------------
+		add(new FragePanel(frageArea));
+		add(Box.createVerticalStrut(15));
 
-    /**
-     * Sets the currently selected theme in the form.
-     *
-     * @param t the selected {@link Theme}, or {@code null} to clear the theme field
-     */
-    public void setThema(Theme t) {
-        themaField.setText(t != null ? t.getTitle() : "");
-    }
+		add(new AnswerHeaderPanel());
+		add(Box.createVerticalStrut(8));
 
-    /**
-     * Fills the form with the data of an existing question.
-     * <p>If the question is {@code null}, the form is cleared.</p>
-     *
-     * @param q the {@link Question} to display, or {@code null} to clear the form
-     */
-    public void setFrage(Question q) {
-        if (q == null) {
-            clearFields();
-            return;
-        }
+		for (int i = 0; i < 4; i++) {
+			add(new AnswerRowPanel(i + 1, answerFields[i], checkboxes[i]));
+			add(Box.createVerticalStrut(8));
+		}
+	}
 
-        titelField.setText(q.getTitle());
-        frageArea.setText(q.getText());
+	// ------------------- Public API -------------------
 
-        List<Answer> answers = q.getAnswers();
-        for (int i = 0; i < answerFields.length; i++) {
-            if (i < answers.size()) {
-                answerFields[i].setText(answers.get(i).getText());
-                checkboxes[i].setSelected(answers.get(i).isCorrect());
-            } else {
-                answerFields[i].setText("");
-                checkboxes[i].setSelected(false);
-            }
-        }
-    }
+	/**
+	 * Sets the theme displayed in the form.
+	 * <p>
+	 * Intended to be called by the outer context (quiz question manager) when a
+	 * theme is currently selected. Cannot be manually edited here.
+	 * </p>
+	 *
+	 * @param t the selected {@link Theme}, or {@code null} to clear the theme field
+	 */
+	public void setThema(Theme t) {
+		themaField.setText(t != null ? t.getTitle() : "");
+	}
 
-    /**
-     * Creates a new {@link Question} object from the current form inputs.
-     * <p>
-     * Only non-empty answers are included.
-     * Each answer can be marked as correct.
-     * </p>
-     *
-     * @param selectedThema the currently selected {@link Theme}
-     * @return a new {@link Question} populated with the form data
-     */
-    public Question getSelectedQuestion(Theme selectedThema) {
-        Question q = new Question(selectedThema);
-        q.setTitle(titelField.getText());
-        q.setText(frageArea.getText());
+	/**
+	 * Fills the form with an existing question for editing.
+	 *
+	 * <ul>
+	 * <li>If the given question is {@code null}, the form is cleared.</li>
+	 * <li>Otherwise, its theme, title, text, and answers are shown.</li>
+	 * </ul>
+	 *
+	 * @param q the {@link Question} to load into the form, or {@code null} for
+	 *          reset
+	 */
+	public void setFrage(Question q) {
+		if (q == null) {
+			clearFields();
+			return;
+		}
 
-        for (int i = 0; i < answerFields.length; i++) {
-            String text = answerFields[i].getText().trim();
-            if (!text.isEmpty()) {
-                Answer a = new Answer(q);
-                a.setText(text);
-                a.setCorrect(checkboxes[i].isSelected());
-                a.setId(i);
-                q.addAnswer(a);
-            }
-        }
-        return q;
-    }
+		titelField.setText(q.getTitle());
+		frageArea.setText(q.getText());
 
-    // ------------------- Private Helpers -------------------
+		List<Answer> answers = q.getAnswers();
+		for (int i = 0; i < answerFields.length; i++) {
+			if (i < answers.size()) {
+				answerFields[i].setText(answers.get(i).getText());
+				checkboxes[i].setSelected(answers.get(i).isCorrect());
+			} else {
+				answerFields[i].setText("");
+				checkboxes[i].setSelected(false);
+			}
+		}
+	}
 
-    /**
-     * Clears all input fields in the form.
-     */
-    private void clearFields() {
-        themaField.setText("");
-        titelField.setText("");
-        frageArea.setText("");
-        for (int i = 0; i < answerFields.length; i++) {
-            answerFields[i].setText("");
-            checkboxes[i].setSelected(false);
-        }
-    }
+	/**
+	 * Builds a new {@link Question} object based on the current form inputs. - Only
+	 * includes answers with non-empty text - Associates each created {@link Answer}
+	 * with its "correct" flag
+	 *
+	 * @param selectedThema the currently selected {@link Theme} (context of the
+	 *                      question)
+	 * @return a new {@link Question} populated with the user’s form data
+	 */
+	public Question getSelectedQuestion(Theme selectedThema) {
+		Question q = new Question(selectedThema);
 
-    /**
-     * Optional setter linking this panel to the right-side question panel.
-     * Currently unused, but reserved for future functionality.
-     *
-     * @param quizFragenRight the {@link QuizQuestionRight} panel to link
-     */
-    public void setPanelRight(QuizQuestionRight quizFragenRight) {
-        // Placeholder for potential future linkage
-    }
+		q.setTitle(titelField.getText());
+		q.setText(frageArea.getText());
+
+		for (int i = 0; i < answerFields.length; i++) {
+			String text = answerFields[i].getText().trim();
+			if (!text.isEmpty()) {
+				Answer a = new Answer(q);
+				a.setText(text);
+				a.setCorrect(checkboxes[i].isSelected());
+				a.setId(i);
+				q.addAnswer(a);
+			}
+		}
+		return q;
+	}
+
+	// ------------------- Private Helpers -------------------
+
+	/**
+	 * Clears all form fields (theme, title, text, and answers).
+	 */
+	private void clearFields() {
+		themaField.setText("");
+		titelField.setText("");
+		frageArea.setText("");
+		for (int i = 0; i < answerFields.length; i++) {
+			answerFields[i].setText("");
+			checkboxes[i].setSelected(false);
+		}
+	}
+
+	/**
+	 * Placeholder linking method to connect with a right-hand management panel.
+	 * Currently unused, but allows for future inter-panel communication.
+	 *
+	 * @param quizFragenRight the {@link QuizQuestionRight} reference
+	 */
+	public void setPanelRight(QuizQuestionRight quizFragenRight) {
+		// reserved for future linkage
+	}
 }

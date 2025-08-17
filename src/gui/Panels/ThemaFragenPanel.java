@@ -5,7 +5,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.util.Collection;
-
+import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -19,354 +19,418 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 
+import persistence.DBDataManager;
 import quizLogic.Question;
 import quizLogic.Theme;
 
 /**
  * {@code ThemaFragenPanel} is a reusable UI component that displays:
  * <ul>
- *     <li>A {@link JComboBox} for selecting a quiz theme</li>
- *     <li>A {@link JList} of questions for the selected theme</li>
- *     <li>An optional information view showing the selected theme's description</li>
- *     <li>An optional feedback view (e.g., for showing correct answers)</li>
+ * <li>A {@link JComboBox} for selecting a quiz theme</li>
+ * <li>A {@link JList} of questions for the selected theme</li>
+ * <li>An optional information view showing the selected theme's
+ * description</li>
+ * <li>An optional feedback view (e.g., for showing correct answers or
+ * messages)</li>
  * </ul>
- *
+ * 
  * <p>
  * It uses a {@link CardLayout} to toggle between different center views:
  * <ul>
- *     <li>"FRAGEN" – question list view</li>
- *     <li>"INFO" – theme info view</li>
- *     <li>"FEEDBACK" – feedback message view</li>
+ * <li>"FRAGEN" – question list view</li>
+ * <li>"INFO" – theme info view</li>
+ * <li>"FEEDBACK" – feedback message view</li>
  * </ul>
  * </p>
- *
+ * 
  * <p>
- * The first combo box item is the special constant {@link #ALLE_THEMEN}, representing "All themes".
- * Selecting it displays questions from all available themes.
+ * The first combo box item is the special constant {@link #ALLE_THEMEN},
+ * representing "All themes". Selecting it displays questions from all available
+ * themes.
  * </p>
  * 
  * <p>
- * This panel is commonly used in theme management, question management, and quiz gameplay UIs.
+ * This panel is commonly used in theme management, question management, and
+ * quiz gameplay UIs.
  * </p>
  * 
- * @author 
- *         Oleg Kapirulya
+ * @author Oleg Kapirulya
  */
 public class ThemaFragenPanel extends JPanel {
+	/** Serial version UID for serialization compatibility. */
+	private static final long serialVersionUID = 1L;
 
-    /** Serial version UID for serialization compatibility. */
-    private static final long serialVersionUID = 1L;
+	/** Combo box for selecting a theme. */
+	private JComboBox<Theme> themaComboBox;
 
-    /** Combo box for selecting a theme. */
-    private JComboBox<Theme> themaComboBox;
+	/** JList displaying the questions for the selected theme. */
+	private JList<Question> fragenList;
 
-    /** JList displaying the questions for the selected theme. */
-    private JList<Question> fragenList;
+	/** List model backing the question list. */
+	private DefaultListModel<Question> fragenModel;
 
-    /** List model backing the question list. */
-    private DefaultListModel<Question> fragenModel;
+	/** Collection of all available themes. */
+	private Collection<Theme> allThemen;
 
-    /** Collection of all available themes. */
-    private Collection<Theme> allThemen;
+	/** Button to toggle between theme info and question list. */
+	private JButton themaInfoButton;
 
-    /** Button to toggle between theme info and question list. */
-    private JButton themaInfoButton;
+	/** Panel showing theme information text. */
+	private JPanel infoPanel;
 
-    /** Panel showing theme information text. */
-    private JPanel infoPanel;
+	/** Theme title label displayed in the info panel. */
+	private JLabel infoTitelLbl;
 
-    /** Theme title label displayed in the info panel. */
-    private JLabel infoTitelLbl;
+	/** Text area containing the theme description. */
+	private JTextArea infoArea;
 
-    /** Text area containing the theme description. */
-    private JTextArea infoArea;
+	/** Panel containing the scrollable question list. */
+	private JPanel listPanel;
 
-    /** Panel containing the scrollable question list. */
-    private JPanel listPanel;
+	/** Center container switching between list, info, and feedback panels. */
+	private JPanel centerPanel;
 
-    /** Center container switching between list, info, and feedback panels. */
-    private JPanel centerPanel;
+	/** Layout manager for switching center views. */
+	private CardLayout cardLayout;
 
-    /** Layout manager for switching center views. */
-    private CardLayout cardLayout;
+	/** Internal flag to track if the info view is being shown. */
+	private boolean showingInfo = false;
 
-    /** Internal flag to track if the info view is being shown. */
-    private boolean showingInfo = false;
+	/** Label above the question list. */
+	private JLabel fragenLabel;
 
-    /** Label above the question list. */
-    private JLabel fragenLabel;
+	/** Feedback panel shown for displaying correct answers or messages. */
+	private JPanel feedbackPanel;
 
-    /** Feedback panel shown for displaying correct answers or messages. */
-    private JPanel feedbackPanel;
+	/** Label inside the feedback panel. */
+	private JLabel feedbackLabel;
 
-    /** Label inside the feedback panel. */
-    private JLabel feedbackLabel;
+	/** Reference to the database data manager. */
+	private DBDataManager dm;
 
-    /**
-     * Special constant theme representing "All themes" in the combo box.
-     */
-    public static final Theme ALLE_THEMEN = new Theme() {
-        @Override
-        public String toString() {
-            return "Alle Themen";
-        }
-    };
+	/**
+	 * Special constant theme representing "All themes" in the combo box. Selecting
+	 * this special item means showing questions from all themes.
+	 */
+	public static final Theme ALLE_THEMEN = new Theme() {
+		@Override
+		public String toString() {
+			return "Alle Themen";
+		}
+	};
 
-    /**
-     * Constructs a new {@code ThemaFragenPanel} with the given themes loaded into the combo box.
-     *
-     * @param themen collection of themes to display; may be {@code null} or empty
-     */
-    public ThemaFragenPanel(Collection<Theme> themen) {
-        this.allThemen = themen;
+	/**
+	 * Constructs a new {@code ThemaFragenPanel} with the given themes loaded into
+	 * the combo box.
+	 *
+	 * @param dm     the {@link DBDataManager} instance to fetch data from the
+	 *               database
+	 * @param themen collection of themes to display; may be {@code null} or empty
+	 */
+	public ThemaFragenPanel(DBDataManager dm, Collection<Theme> themen) {
+		this.dm = dm;
+		this.allThemen = themen;
 
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 5));
+		// Use vertical layout for the whole panel
+		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+		setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 5));
 
-        // ---------- Header with label and toggle button ----------
-        JPanel headerPanel = new JPanel();
-        headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.X_AXIS));
+		// ---------- Header with label and toggle button ----------
+		JPanel headerPanel = new JPanel();
+		headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.X_AXIS));
 
-        setFragenLabel(new JLabel("Fragen zum Thema"));
-        headerPanel.add(getFragenLabel());
-        headerPanel.add(Box.createHorizontalGlue());
+		// Label displayed above the question list
+		setFragenLabel(new JLabel("Fragen zum Thema"));
+		headerPanel.add(getFragenLabel());
 
-        themaInfoButton = new JButton("Thema anzeigen");
-        headerPanel.add(themaInfoButton);
-        headerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        add(headerPanel);
+		// Horizontal glue for spacing
+		headerPanel.add(Box.createHorizontalGlue());
 
-        // ---------- Theme combo box ----------
-        JPanel comboPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        themaComboBox = new JComboBox<>();
-        themaComboBox.addItem(ALLE_THEMEN);
+		// Button to toggle showing theme information
+		themaInfoButton = new JButton("Thema anzeigen");
+		headerPanel.add(themaInfoButton);
+		headerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        if (themen != null) {
-            for (Theme t : themen) {
-                themaComboBox.addItem(t);
-            }
-        }
-        themaComboBox.setPreferredSize(new Dimension(260, 30));
-        comboPanel.add(themaComboBox);
-        comboPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        add(comboPanel);
+		// Add header panel to main panel
+		add(headerPanel);
 
-        // ---------- Info panel ----------
-        infoPanel = new JPanel();
-        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-        infoTitelLbl = new JLabel();
-        infoArea = new JTextArea(4, 26);
-        infoArea.setEditable(false);
-        infoArea.setLineWrap(true);
-        infoArea.setWrapStyleWord(true);
-        infoPanel.add(infoTitelLbl);
-        infoPanel.add(Box.createVerticalStrut(5));
-        infoPanel.add(new JScrollPane(infoArea));
-        infoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+		// ---------- Theme combo box panel ----------
+		JPanel comboPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		themaComboBox = new JComboBox<>();
 
-        // ---------- Question list panel ----------
-        fragenModel = new DefaultListModel<>();
-        fragenList = new JList<>(fragenModel);
-        fragenList.setVisibleRowCount(10);
-        JScrollPane scrollPane = new JScrollPane(fragenList);
-        scrollPane.setPreferredSize(new Dimension(260, 310));
+		// Add special "All themes" entry first
+		themaComboBox.addItem(ALLE_THEMEN);
 
-        listPanel = new JPanel();
-        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
-        listPanel.add(scrollPane);
-        listPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+		// Add actual themes if available
+		if (themen != null) {
+			for (Theme t : themen) {
+				themaComboBox.addItem(t);
+			}
+		}
 
-        // ---------- Feedback panel ----------
-        feedbackPanel = new JPanel();
-        feedbackPanel.setLayout(new BoxLayout(feedbackPanel, BoxLayout.Y_AXIS));
-        feedbackPanel.add(Box.createVerticalGlue());
-        feedbackLabel = new JLabel("", SwingConstants.CENTER);
-        feedbackLabel.setFont(feedbackLabel.getFont().deriveFont(18f));
-        feedbackLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        feedbackPanel.add(feedbackLabel);
-        feedbackPanel.add(Box.createVerticalGlue());
+		themaComboBox.setPreferredSize(new Dimension(260, 30));
+		comboPanel.add(themaComboBox);
+		comboPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // ---------- CardLayout to switch between views ----------
-        cardLayout = new CardLayout();
-        centerPanel = new JPanel(cardLayout);
-        centerPanel.add(listPanel, "FRAGEN");
-        centerPanel.add(infoPanel, "INFO");
-        centerPanel.add(feedbackPanel, "FEEDBACK");
-        centerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        add(centerPanel);
+		// Add combo box panel to main panel
+		add(comboPanel);
 
-        fillFragenList();
+		// ---------- Info panel (shows theme description text) ----------
+		infoPanel = new JPanel();
+		infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
 
-        // ---------- Event handlers ----------
-        themaComboBox.addActionListener(e -> {
-            if (!showingInfo) {
-                fillFragenList();
-            } else {
-                Theme selected = (Theme) themaComboBox.getSelectedItem();
-                updateThemaInfo(selected);
-            }
-        });
+		// Label showing theme title (currently unused, reserved for enhancement)
+		infoTitelLbl = new JLabel();
 
-        themaInfoButton.addActionListener(e -> toggleInfoAnzeige());
-    }
+		// Text area for displaying theme description, non-editable and word wrapped
+		infoArea = new JTextArea(4, 26);
+		infoArea.setEditable(false);
+		infoArea.setLineWrap(true);
+		infoArea.setWrapStyleWord(true);
 
-    /**
-     * Populates the question list based on the currently selected theme.
-     * <p>
-     * If {@link #ALLE_THEMEN} is selected, questions from all themes are shown.
-     * Otherwise, only questions for the selected theme are displayed.
-     * </p>
-     */
-    public void fillFragenList() {
-        fragenModel.clear();
-        Theme selected = (Theme) themaComboBox.getSelectedItem();
+		infoPanel.add(infoTitelLbl);
+		infoPanel.add(Box.createVerticalStrut(5));
+		infoPanel.add(new JScrollPane(infoArea));
+		infoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        if (selected == ALLE_THEMEN) {
-            for (Theme t : allThemen) {
-                if (t == ALLE_THEMEN) continue;
-                if (t.getAllQuestions() != null) {
-                    for (Question q : t.getAllQuestions()) {
-                        fragenModel.addElement(q);
-                    }
-                }
-            }
-        } else if (selected != null && selected.getAllQuestions() != null) {
-            for (Question q : selected.getAllQuestions()) {
-                fragenModel.addElement(q);
-            }
-        }
-    }
+		// ---------- Question list panel ----------
+		fragenModel = new DefaultListModel<>();
+		fragenList = new JList<>(fragenModel);
+		fragenList.setVisibleRowCount(10);
 
-    /**
-     * Updates the theme info area with the description of the selected theme.
-     *
-     * @param thema the {@link Theme} whose description will be shown
-     */
-    private void updateThemaInfo(Theme thema) {
-        if (thema != null) {
-            infoArea.setText(thema.getText() != null ? thema.getText() : "");
-        }
-    }
+		JScrollPane scrollPane = new JScrollPane(fragenList);
+		scrollPane.setPreferredSize(new Dimension(260, 310));
 
-    /**
-     * Toggles between showing the question list and the theme info view.
-     */
-    private void toggleInfoAnzeige() {
-        showingInfo = !showingInfo;
-        if (showingInfo) {
-            Theme selected = (Theme) themaComboBox.getSelectedItem();
-            updateThemaInfo(selected);
-            cardLayout.show(centerPanel, "INFO");
-            themaInfoButton.setText("Liste anzeigen");
-        } else {
-            cardLayout.show(centerPanel, "FRAGEN");
-            themaInfoButton.setText("Thema anzeigen");
-        }
-        revalidate();
-        repaint();
-    }
+		listPanel = new JPanel();
+		listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
+		listPanel.add(scrollPane);
+		listPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-    /**
-     * Replaces the themes in the combo box and refreshes the question list.
-     *
-     * @param neueThemen the new themes to be shown in the combo box
-     */
-    public void setThemen(Collection<Theme> neueThemen) {
-        themaComboBox.removeAllItems();
-        themaComboBox.addItem(ALLE_THEMEN);
+		// ---------- Feedback panel (for correct answers or messages) ----------
+		feedbackPanel = new JPanel();
+		feedbackPanel.setLayout(new BoxLayout(feedbackPanel, BoxLayout.Y_AXIS));
+		feedbackPanel.add(Box.createVerticalGlue());
 
-        if (neueThemen != null) {
-            for (Theme t : neueThemen) {
-                if (t == ALLE_THEMEN) continue;
-                themaComboBox.addItem(t);
-            }
-        }
-        this.allThemen = neueThemen;
-        fillFragenList();
-    }
+		feedbackLabel = new JLabel("", SwingConstants.CENTER);
+		feedbackLabel.setFont(feedbackLabel.getFont().deriveFont(18f));
+		feedbackLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-    /**
-     * Shows a feedback message (e.g., correct answer) in the info view.
-     *
-     * @param answerText the text to display
-     */
-    public void showFeedbackAnswer(String answerText) {
-        infoArea.setText(answerText);
-        cardLayout.show(centerPanel, "INFO");
-        themaInfoButton.setText("Zurück");
-        showingInfo = true;
-    }
+		feedbackPanel.add(feedbackLabel);
+		feedbackPanel.add(Box.createVerticalGlue());
 
-    /**
-     * Switches the display back to the question list view.
-     */
-    public void showFragenList() {
-        cardLayout.show(centerPanel, "FRAGEN");
-        revalidate();
-        repaint();
-    }
+		// ---------- Center panel with CardLayout to switch views ----------
+		cardLayout = new CardLayout();
+		centerPanel = new JPanel(cardLayout);
 
-    /**
-     * Removes a question from the list at the specified index.
-     *
-     * @param index the index of the question to remove
-     */
-    public void removeQuestionAt(int index) {
-        if (index >= 0 && index < fragenModel.getSize()) {
-            fragenModel.remove(index);
-        }
-    }
+		// Add the possible views to the center panel
+		centerPanel.add(listPanel, "FRAGEN"); // question list view
+		centerPanel.add(infoPanel, "INFO"); // theme info view
+		centerPanel.add(feedbackPanel, "FEEDBACK"); // feedback message view
+		centerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-    /**
-     * Adds a new question to the list.
-     *
-     * @param question the {@link Question} to add
-     */
-    public void addQuestion(Question question) {
-        fragenModel.addElement(question);
-    }
+		add(centerPanel);
 
-    /** 
-     * @return the question {@link JList}
-     */
-    public JList<Question> getFragenList() {
-        return fragenList;
-    }
+		// Load initial questions into the list
+		fillFragenList();
 
-    /** 
-     * @return the theme {@link JComboBox}
-     */
-    public JComboBox<Theme> getThemaComboBox() {
-        return themaComboBox;
-    }
+		// ---------- Event handlers ----------
 
-    /** 
-     * @return the info toggle {@link JButton}
-     */
-    public JButton getThemaInfoButton() {
-        return themaInfoButton;
-    }
+		// When theme in combo box changes, update questions list or info view
+		// accordingly
+		themaComboBox.addActionListener(e -> {
+			if (!showingInfo) {
+				fillFragenList(); // Update questions list for selected theme
+			} else {
+				Theme selected = (Theme) themaComboBox.getSelectedItem();
+				updateThemaInfo(selected); // Update info text for selected theme
+			}
+		});
 
-    /** 
-     * @return the theme title {@link JLabel} used in the info view
-     */
-    public JLabel getInfoTitelLbl() {
-        return infoTitelLbl;
-    }
+		// Button toggles between question list view and theme info view
+		themaInfoButton.addActionListener(e -> toggleInfoAnzeige());
+	}
 
-    /** 
-     * @return the label displayed above the question list
-     */
-    public JLabel getFragenLabel() {
-        return fragenLabel;
-    }
+	/**
+	 * Clears and fills the question list model with questions from the currently
+	 * selected theme. If "Alle Themen" is selected, questions from all themes
+	 * except the special "All themes" item are shown.
+	 */
+	public void fillFragenList() {
+		fragenModel.clear();
 
-    /**
-     * Sets the label that appears above the question list.
-     *
-     * @param fragenLabel the new label to set
-     */
-    public void setFragenLabel(JLabel fragenLabel) {
-        this.fragenLabel = fragenLabel;
-    }
+		Theme selected = (Theme) themaComboBox.getSelectedItem();
+
+		if (selected == ALLE_THEMEN) {
+			// Add questions from all themes except the special "Alle Themen" entry
+			for (Theme t : allThemen) {
+				if (t == ALLE_THEMEN)
+					continue;
+
+				List<Question> questions = dm.getQuestionsFor(t);
+				for (Question q : questions) {
+					fragenModel.addElement(q);
+				}
+			}
+		} else if (selected != null) {
+			// Add questions for the selected single theme
+			List<Question> questions = dm.getQuestionsFor(selected);
+			for (Question q : questions) {
+				fragenModel.addElement(q);
+			}
+		}
+	}
+
+	/**
+	 * Updates the info area to display the text description of the given theme.
+	 *
+	 * @param thema the selected {@link Theme} whose description is shown; may be
+	 *              {@code null}
+	 */
+	private void updateThemaInfo(Theme thema) {
+		if (thema != null) {
+			infoArea.setText(thema.getText() != null ? thema.getText() : "");
+		}
+	}
+
+	/**
+	 * Toggles between showing the question list and the theme info panel. Switches
+	 * the card layout view and updates the toggle button text accordingly.
+	 */
+	private void toggleInfoAnzeige() {
+		showingInfo = !showingInfo;
+
+		if (showingInfo) {
+			Theme selected = (Theme) themaComboBox.getSelectedItem();
+			updateThemaInfo(selected);
+			cardLayout.show(centerPanel, "INFO");
+			themaInfoButton.setText("Liste anzeigen");
+		} else {
+			cardLayout.show(centerPanel, "FRAGEN");
+			themaInfoButton.setText("Thema anzeigen");
+		}
+
+		revalidate();
+		repaint();
+	}
+
+	/**
+	 * Replaces the themes currently displayed in the combo box and refreshes the
+	 * question list.
+	 *
+	 * @param neueThemen the collection of new {@link Theme}s to display
+	 */
+	public void setThemen(Collection<Theme> neueThemen) {
+		themaComboBox.removeAllItems();
+		themaComboBox.addItem(ALLE_THEMEN);
+
+		if (neueThemen != null) {
+			for (Theme t : neueThemen) {
+				// Exclude the special "All themes" item if present
+				if (t != ALLE_THEMEN)
+					themaComboBox.addItem(t);
+			}
+		}
+
+		this.allThemen = neueThemen;
+	}
+
+	/**
+	 * Displays a feedback message (e.g. for showing the correct answer) in the info
+	 * view.
+	 *
+	 * @param answerText the message text to show
+	 */
+	public void showFeedbackAnswer(String answerText) {
+		infoArea.setText(answerText);
+		cardLayout.show(centerPanel, "INFO");
+		themaInfoButton.setText("Zurück");
+		showingInfo = true;
+	}
+
+	/**
+	 * Resets the center panel to show the question list view.
+	 */
+	public void showFragenList() {
+		cardLayout.show(centerPanel, "FRAGEN");
+		revalidate();
+		repaint();
+	}
+
+	/**
+	 * Replaces the question list content with a new list of questions.
+	 * 
+	 * @param fragen list of {@link Question}s to display; can be null or empty
+	 */
+	public void setFragen(List<Question> fragen) {
+		fragenModel.clear();
+		if (fragen != null) {
+			for (Question q : fragen) {
+				fragenModel.addElement(q);
+			}
+		}
+	}
+
+	/**
+	 * Removes a question from the list at the given index.
+	 *
+	 * @param index index of the question to remove; must be within list bounds
+	 */
+	public void removeQuestionAt(int index) {
+		if (index >= 0 && index < fragenModel.getSize()) {
+			fragenModel.remove(index);
+		}
+	}
+
+	/**
+	 * Adds a new question to the question list.
+	 *
+	 * @param question the {@link Question} to add
+	 */
+	public void addQuestion(Question question) {
+		fragenModel.addElement(question);
+	}
+
+	/**
+	 * @return the internal {@link JList} component displaying questions
+	 */
+	public JList<Question> getFragenList() {
+		return fragenList;
+	}
+
+	/**
+	 * @return the internal {@link JComboBox} component for theme selection
+	 */
+	public JComboBox<Theme> getThemaComboBox() {
+		return themaComboBox;
+	}
+
+	/**
+	 * @return the button used to toggle theme info view
+	 */
+	public JButton getThemaInfoButton() {
+		return themaInfoButton;
+	}
+
+	/**
+	 * @return the label displaying the theme title in info view
+	 */
+	public JLabel getInfoTitelLbl() {
+		return infoTitelLbl;
+	}
+
+	/**
+	 * @return the label above the question list
+	 */
+	public JLabel getFragenLabel() {
+		return fragenLabel;
+	}
+
+	/**
+	 * Sets the label that appears above the question list.
+	 *
+	 * @param fragenLabel the new {@link JLabel} to set
+	 */
+	public void setFragenLabel(JLabel fragenLabel) {
+		this.fragenLabel = fragenLabel;
+	}
 }

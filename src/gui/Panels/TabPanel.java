@@ -68,7 +68,7 @@ public class TabPanel extends JTabbedPane {
 		addChangeListener(e -> {
 			int tab = getSelectedIndex();
 			if (tab == 1) { // "Quiz Questions" tab
-				quizFragenPanel.reloadThemen();
+				quizFragenPanel.reloadThemes();
 			} else if (tab == 2) { // "Quiz" tab
 				quizPanel.getQuizPanelRight().reloadAllThemenUndFragen();
 			}

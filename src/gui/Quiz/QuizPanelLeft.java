@@ -2,82 +2,102 @@ package gui.Quiz;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import gui.Panels.QuizPanelLeftLayout;
-import persistence.serialization.QuizDataManager;
+import persistence.DBDataManager;
 import quizLogic.Answer;
 import quizLogic.Question;
 import quizLogic.Theme;
 
 /**
- * {@code QuizPanelLeft} represents the left panel in the quiz UI.
+ * {@code QuizPanelLeft} represents the left-hand side of the quiz UI.
+ *
  * <p>
- * It displays the detailed information of the selected quiz question,
- * including:
+ * This panel is responsible for displaying the detailed information about a
+ * single quiz question, including:
+ * </p>
  * <ul>
  * <li>The associated theme</li>
  * <li>The question title</li>
  * <li>The question text</li>
- * <li>The possible answers with their checkboxes</li>
+ * <li>Possible answers along with checkboxes</li>
  * </ul>
- * The fields are mostly read-only and used to show the current question state.
- * </p>
- * 
+ *
  * <p>
- * Layout and component positioning are delegated to
- * {@link QuizPanelLeftLayout}.
+ * The UI components are primarily <b>read-only</b>, serving as a display rather
+ * than user input form. The panel ensures that any currently displayed question
+ * is rendered consistently with its answers and checkboxes.
  * </p>
- * 
+ *
+ * <p>
+ * Layout and positioning of components are handled by
+ * {@link QuizPanelLeftLayout}, while this class focuses on data population and
+ * state updates.
+ * </p>
+ *
+ * <p>
+ * Data is retrieved and managed through {@link DBDataManager}, which interacts
+ * with the persistence/database layer.
+ * </p>
+ *
  * @author Oleg Kapirulya
  */
 public class QuizPanelLeft extends JPanel {
-
-	/** Serialization version UID. */
+	/** Serialization version UID (recommended for Swing panels). */
 	private static final long serialVersionUID = 1L;
 
-	/** Text field showing the theme title (read-only). */
+	/** Text field displaying the title of the theme (read-only). */
 	private JTextField themaField;
 
-	/** Text field showing the question title (read-only). */
+	/** Text field displaying the question's title (read-only). */
 	private JTextField titelField;
 
-	/** Text area showing the question text (read-only). */
+	/** Text area showing the main question text (read-only, word-wrapped). */
 	private JTextArea frageArea;
 
-	/** Text fields showing up to 4 answer options (read-only). */
+	/** Text fields for showing up to 4 possible answers (read-only). */
 	private JTextField[] answerFields = new JTextField[4];
 
-	/** Checkboxes associated with each answer option. */
+	/** Checkboxes for each of the possible answers. */
 	private JCheckBox[] checkboxes = new JCheckBox[4];
 
-	/** Text field to display messages or status. */
+	/** Field for displaying messages, status, or feedback. */
 	private JTextField messageField;
 
-	/** Data manager for accessing quiz data. */
-	private QuizDataManager dm;
+	/** Data manager to retrieve question/answer/theme details from DB. */
+	private final DBDataManager dm;
 
-	/** Reference to the right-side panel (if linking needed). */
+	/** Optional link back to the right-side quiz panel. */
 	private QuizPanelRight quizPanelRight;
 
 	/**
 	 * Constructs a new {@code QuizPanelLeft}.
-	 * 
-	 * @param dm the {@link QuizDataManager} for accessing quiz data
+	 *
+	 * <p>
+	 * The panel initializes all UI components, builds the layout via
+	 * {@link QuizPanelLeftLayout}, and clears the display initially.
+	 * </p>
+	 *
+	 * @param dm the {@link DBDataManager} used for data retrieval
 	 */
-	public QuizPanelLeft(QuizDataManager dm) {
+	public QuizPanelLeft(DBDataManager dm) {
 		this.dm = dm;
 		initComponents();
+
+		// Delegate layout arrangement to a dedicated layout helper
 		QuizPanelLeftLayout.build(this, themaField, titelField, frageArea, answerFields, checkboxes, messageField);
+
+		// Initially, nothing is selected, so fields are cleared
 		fillWithData(null);
 	}
 
 	/**
-	 * Initializes the UI components and sets them to non-editable for display.
+	 * Initializes all Swing UI components for this panel and configures them as
+	 * read-only where appropriate.
 	 */
 	private void initComponents() {
 		themaField = new JTextField(27);
@@ -94,6 +114,7 @@ public class QuizPanelLeft extends JPanel {
 		for (int i = 0; i < 4; i++) {
 			answerFields[i] = new JTextField(23);
 			answerFields[i].setEditable(false);
+
 			checkboxes[i] = new JCheckBox();
 		}
 
@@ -102,25 +123,31 @@ public class QuizPanelLeft extends JPanel {
 	}
 
 	/**
-	 * Fills the fields with the given question's data. If the question is null, all
-	 * fields are cleared.
-	 * 
-	 * @param q the {@link Question} to display, or {@code null} to clear fields
+	 * Populates this panel with data from the given {@link Question}.
+	 * <ul>
+	 * <li>If the question is non-null, its title, text, theme, and answers will be
+	 * shown.</li>
+	 * <li>If {@code null} is passed, all fields are cleared.</li>
+	 * </ul>
+	 *
+	 * @param q the {@link Question} to display, or {@code null} to reset fields
 	 */
-	private void fillWithData(Question q) {
+	void fillWithData(Question q) {
 		if (q == null) {
 			clearFields();
 			return;
 		}
+
 		themaField.setText(q.getThema() != null ? q.getThema().getTitle() : "");
 		titelField.setText(q.getTitle());
 		frageArea.setText(q.getText());
 
+		// Copy answers into local array (limit 4)
 		List<Answer> answers = new ArrayList<>(q.getAnswers());
 		for (int i = 0; i < answerFields.length; i++) {
 			if (i < answers.size()) {
 				answerFields[i].setText(answers.get(i).getText());
-				checkboxes[i].setSelected(false); // Reset checkboxes, as this panel only displays answers
+				checkboxes[i].setSelected(false); // always reset as initial state
 			} else {
 				answerFields[i].setText("");
 				checkboxes[i].setSelected(false);
@@ -130,8 +157,14 @@ public class QuizPanelLeft extends JPanel {
 
 	/**
 	 * Returns the text from the first answer field.
-	 * 
-	 * @return the text of the first answer field, or {@code null} if no answers
+	 *
+	 * <p>
+	 * This is a helper method – primarily useful when only one answer field is
+	 * relevant. In multi-answer scenarios, direct access to checkboxes/answers
+	 * should be used.
+	 * </p>
+	 *
+	 * @return the text of the first answer field, or {@code null} if none exist
 	 */
 	public String getUserAnswerText() {
 		if (answerFields != null && answerFields.length > 0) {
@@ -142,7 +175,7 @@ public class QuizPanelLeft extends JPanel {
 
 	/**
 	 * Enables or disables all answer checkboxes.
-	 * 
+	 *
 	 * @param enabled {@code true} to enable; {@code false} to disable
 	 */
 	public void setCheckboxesEnabled(boolean enabled) {
@@ -152,23 +185,26 @@ public class QuizPanelLeft extends JPanel {
 	}
 
 	/**
-	 * Clears all input and display fields.
+	 * Clears all fields in the panel, including theme, question, answers, and
+	 * status message.
 	 */
 	private void clearFields() {
 		themaField.setText("");
 		titelField.setText("");
 		frageArea.setText("");
+
 		for (int i = 0; i < answerFields.length; i++) {
 			answerFields[i].setText("");
 			checkboxes[i].setSelected(false);
 		}
+
 		messageField.setText("");
 	}
 
 	/**
-	 * Sets the displayed theme title.
-	 * 
-	 * @param t the {@link Theme} whose title will be displayed; ignored if null
+	 * Sets the theme field to display the given {@link Theme}.
+	 *
+	 * @param t the theme to display; ignored if {@code null}
 	 */
 	public void setThema(Theme t) {
 		if (t != null) {
@@ -177,17 +213,18 @@ public class QuizPanelLeft extends JPanel {
 	}
 
 	/**
-	 * Sets the displayed question and answers.
-	 * 
-	 * @param q the {@link Question} to display
+	 * Sets the displayed question along with its answers.
+	 *
+	 * @param q the {@link Question} to show
 	 */
 	public void setFrage(Question q) {
 		fillWithData(q);
 	}
 
 	/**
-	 * Returns the message text field used for displaying info or status messages.
-	 * 
+	 * Returns the dedicated message field, which can be used to show feedback,
+	 * status information, or prompts to the user.
+	 *
 	 * @return the message {@link JTextField}
 	 */
 	public JTextField getMessageField() {
@@ -195,9 +232,13 @@ public class QuizPanelLeft extends JPanel {
 	}
 
 	/**
-	 * Sets the reference to the right panel.
-	 * 
-	 * @param quizPanelRight the {@link QuizPanelRight} instance to link to
+	 * Links this panel to the right-side quiz panel.
+	 * <p>
+	 * This allows inter-panel communication if the right panel needs to reference
+	 * or update this one.
+	 * </p>
+	 *
+	 * @param quizPanelRight the {@link QuizPanelRight} reference
 	 */
 	public void setPanelRight(QuizPanelRight quizPanelRight) {
 		this.quizPanelRight = quizPanelRight;

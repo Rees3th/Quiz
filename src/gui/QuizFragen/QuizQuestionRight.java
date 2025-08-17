@@ -3,238 +3,242 @@ package gui.QuizFragen;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.DefaultListModel;
 import javax.swing.JPanel;
 
 import gui.Panels.ThemaFragenPanel;
-import persistence.serialization.QuizDataManager;
+import persistence.DBDataManager;
 import quizLogic.Question;
 import quizLogic.Theme;
 
 /**
- * {@code QuizQuestionRight} is the right-hand panel in the quiz question management view.
+ * {@code QuizQuestionRight} is the right-hand panel in the quiz question
+ * management view.
+ *
  * <p>
- * It provides a {@link ThemaFragenPanel} containing:
+ * It displays both:
+ * </p>
  * <ul>
- *     <li>A dropdown list of quiz themes</li>
- *     <li>A corresponding list of questions for the selected theme</li>
+ * <li>A combo box containing available quiz themes</li>
+ * <li>A list of questions belonging to the selected theme</li>
  * </ul>
- * The panel coordinates with the left form panel ({@link QuizQuestionLeft}) to
- * update question details when the user changes the selection.
- * </p>
- * 
+ *
  * <p>
- * User interactions such as selecting a different theme or question are handled
- * here and propagated to the linked {@link QuizQuestionLeft}.
+ * <b>Main responsibilities:</b>
+ * </p>
+ * <ul>
+ * <li>Loading themes/questions from {@link DBDataManager}</li>
+ * <li>Reacting to theme selection changes</li>
+ * <li>Updating the left form panel ({@link QuizQuestionLeft}) when the user
+ * picks a question</li>
+ * </ul>
+ *
+ * <p>
+ * This panel keeps the editor panel and data source synchronized, so users can
+ * efficiently browse and edit quiz questions.
  * </p>
  * 
- * @author 
+ * @author Oleg Kapirulya
  */
 public class QuizQuestionRight extends JPanel {
+	/** Serial version UID for Swing serialization compatibility. */
+	private static final long serialVersionUID = 1L;
 
-    /** Serial version UID for serialization compatibility. */
-    private static final long serialVersionUID = 1L;
+	/** Combined sub-panel showing both theme combo box and question list. */
+	private ThemaFragenPanel themaFragenPanel;
 
-    /** Data manager for accessing all themes and questions. */
-    private final QuizDataManager dm;
+	/** Reference to the left question editor panel. */
+	private QuizQuestionLeft quizQuestionLeft;
 
-    /** UI panel for displaying both theme and question lists. */
-    private ThemaFragenPanel themaFragenPanel;
+	/** Data manager for retrieving themes and questions from the DB. */
+	private final DBDataManager dm;
 
-    /** Reference to the left form panel for displaying the selected question's details. */
-    private QuizQuestionLeft quizFragenLeft;
+	/**
+	 * Constructs a new right-hand management panel.
+	 *
+	 * @param dm the {@link DBDataManager} used for data access
+	 */
+	public QuizQuestionRight(DBDataManager dm) {
+		this.dm = dm;
+		initPanel();
+		initThemaFragenPanel();
+		setupEvents();
+		initializeSelection();
+	}
 
-    /**
-     * Creates a new right-hand panel for quiz question management.
-     *
-     * @param dm the {@link QuizDataManager} used to load themes and questions
-     */
-    public QuizQuestionRight(QuizDataManager dm) {
-        this.dm = dm;
-        initPanel();
-        initThemaFragenPanel();
-        setupEvents();
-        initializeSelection();
-    }
+	// ------------------- Initialization -------------------
 
-    // ------------------- Initialization -------------------
+	/**
+	 * Initialize layout with vertical box structure and basic padding.
+	 */
+	private void initPanel() {
+		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+		setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+	}
 
-    /**
-     * Initializes the panel layout and basic UI settings.
-     * <p>Uses a vertical {@link BoxLayout} with padding.</p>
-     */
-    private void initPanel() {
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-    }
+	/**
+	 * Create and configure a {@link ThemaFragenPanel}, initially filled with themes
+	 * from the database.
+	 */
+	private void initThemaFragenPanel() {
+		List<Theme> filteredThemes = getFilteredThemen();
+		themaFragenPanel = new ThemaFragenPanel(dm, filteredThemes);
+		add(themaFragenPanel);
+		add(Box.createVerticalStrut(15));
+		// Add special "All themes" entry
+		filteredThemes.add(ThemaFragenPanel.ALLE_THEMEN);
+	}
 
-    /**
-     * Creates the {@link ThemaFragenPanel} and adds it to this panel.
-     * <p>The theme list is initially loaded from the data source,
-     * excluding the special "All themes" entry.</p>
-     */
-    private void initThemaFragenPanel() {
-        List<Theme> filteredThemes = getFilteredThemen();
-        themaFragenPanel = new ThemaFragenPanel(filteredThemes);
-        add(themaFragenPanel);
-        add(Box.createVerticalStrut(15));
+	/**
+	 * Fetches all real themes from DB and excludes the special "All themes"
+	 * placeholder (added separately).
+	 *
+	 * @return list of valid {@link Theme} objects
+	 */
+	private List<Theme> getFilteredThemen() {
+		List<Theme> list = new ArrayList<>();
+		for (Theme t : dm.getAllThemes()) {
+			if (!"Alle Themen".equals(t.toString())) {
+				list.add(t);
+			}
+		}
+		return list;
+	}
 
-        // Add special "All themes" entry to the list after initialization
-        filteredThemes.add(ThemaFragenPanel.ALLE_THEMEN);
-    }
+	/**
+	 * Automatically selects the first theme in the combo box, if available.
+	 */
+	private void initializeSelection() {
+		if (themaFragenPanel.getThemaComboBox().getItemCount() > 0) {
+			themaFragenPanel.getThemaComboBox().setSelectedIndex(0);
+		}
+	}
 
-    /**
-     * Retrieves all themes except the special "All themes" entry.
-     *
-     * @return list of valid {@link Theme} objects
-     */
-    private List<Theme> getFilteredThemen() {
-        List<Theme> list = new ArrayList<>();
-        for (Theme t : dm.getAllThemen()) {
-            if (!"Alle Themen".equals(t.toString())) {
-                list.add(t);
-            }
-        }
-        return list;
-    }
+	/**
+	 * Setup event listeners for:
+	 * <ul>
+	 * <li><b>Theme selection:</b> reload questions for chosen theme</li>
+	 * <li><b>Question selection:</b> show details in left editor panel</li>
+	 * </ul>
+	 */
+	private void setupEvents() {
+		// Theme selector updates questions in the list
+		themaFragenPanel.getThemaComboBox().addActionListener(e -> {
+			Theme selected = (Theme) themaFragenPanel.getThemaComboBox().getSelectedItem();
+			if (selected == null)
+				return;
 
-    /**
-     * Automatically selects the first theme in the dropdown,
-     * if at least one theme is present.
-     */
-    private void initializeSelection() {
-        if (themaFragenPanel.getThemaComboBox().getItemCount() > 0) {
-            themaFragenPanel.getThemaComboBox().setSelectedIndex(0);
-        }
-    }
+			List<Question> fragen;
+			if (selected == themaFragenPanel.ALLE_THEMEN) {
+				fragen = new ArrayList<>();
+				for (Theme t : dm.getAllThemes()) {
+					fragen.addAll(dm.getQuestionsFor(t));
+				}
+			} else {
+				fragen = dm.getQuestionsFor(selected);
+			}
 
-    /**
-     * Registers listeners for the theme dropdown and question list
-     * to update the linked left panel when the selection changes.
-     */
-    private void setupEvents() {
-        // Theme selection change
-        themaFragenPanel.getThemaComboBox().addActionListener(e -> {
-            Theme selected = (Theme) themaFragenPanel.getThemaComboBox().getSelectedItem();
-            updateFragenList(selected);
-            if (quizFragenLeft != null && selected != null) {
-                quizFragenLeft.setThema(selected);
-            }
-        });
+			setFragen(fragen);
 
-        // Question selection change
-        themaFragenPanel.getFragenList().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                Question selectedQuestion = themaFragenPanel.getFragenList().getSelectedValue();
-                if (quizFragenLeft != null && selectedQuestion != null) {
-                    quizFragenLeft.setFrage(selectedQuestion);
-                }
-            }
-        });
-    }
+			// Reset left form when theme changes
+			if (quizQuestionLeft != null) {
+				quizQuestionLeft.setThema(selected == themaFragenPanel.ALLE_THEMEN ? null : selected);
+				quizQuestionLeft.setFrage(null);
+			}
+		});
 
-    // ------------------- Public API -------------------
+		// Question selection updates the left form
+		themaFragenPanel.getFragenList().addListSelectionListener(e -> {
+			if (!e.getValueIsAdjusting() && quizQuestionLeft != null) {
+				Question selectedQ = themaFragenPanel.getFragenList().getSelectedValue();
+				quizQuestionLeft.setFrage(selectedQ);
+			}
+		});
+	}
 
-    /**
-     * Reloads the given theme collection into the theme dropdown.
-     * After reloading, the first theme is automatically selected.
-     *
-     * @param neueThemen the new set of themes to be shown in the dropdown
-     */
-    public void reloadThemen(Collection<Theme> neueThemen) {
-        themaFragenPanel.setThemen(neueThemen);
-        themaFragenPanel.getThemaComboBox().setSelectedIndex(0);
-    }
+	// ------------------- Public API -------------------
 
-    /**
-     * Reloads the question list in the UI from the given list of questions.
-     *
-     * @param fragen list of questions to display (may be {@code null})
-     */
-    public void reloadFragen(ArrayList<Question> fragen) {
-        @SuppressWarnings("unchecked")
-        DefaultListModel<Question> model =
-                (DefaultListModel<Question>) themaFragenPanel.getFragenList().getModel();
-        model.clear();
-        if (fragen != null) {
-            for (Question q : fragen) {
-                model.addElement(q);
-            }
-        }
-    }
+	/**
+	 * Replaces the set of available themes and automatically reloads the questions
+	 * for the first entry.
+	 *
+	 * @param themen collection of themes to display.
+	 */
+	public void setThemen(Collection<Theme> themen) {
+		themaFragenPanel.setThemen(themen);
 
-    /**
-     * Checks whether a specific theme (not "All themes") is currently selected.
-     *
-     * @return {@code true} if a specific theme is selected, {@code false} otherwise
-     */
-    public boolean hasSelectedThema() {
-        Object selected = themaFragenPanel.getThemaComboBox().getSelectedItem();
-        return (selected instanceof Theme) && selected != ThemaFragenPanel.ALLE_THEMEN;
-    }
+		if (themen != null && !themen.isEmpty()) {
+			themaFragenPanel.getThemaComboBox().setSelectedIndex(0);
+			Theme first = (Theme) themaFragenPanel.getThemaComboBox().getSelectedItem();
+			loadQuestionsForSelection(first);
+		} else {
+			themaFragenPanel.setFragen(null);
+		}
+	}
 
-    /**
-     * Returns the question currently selected in the question list.
-     *
-     * @return the selected {@link Question} or {@code null} if no selection
-     */
-    public Question getSelectedQuestion() {
-        if (themaFragenPanel != null && themaFragenPanel.getFragenList() != null) {
-            return themaFragenPanel.getFragenList().getSelectedValue();
-        }
-        return null;
-    }
+	/**
+	 * Replaces the question list with a given set of questions.
+	 *
+	 * @param fragen list of {@link Question} objects (may be null)
+	 */
+	public void setFragen(List<Question> fragen) {
+		themaFragenPanel.setFragen(fragen);
+	}
 
-    /**
-     * Sets the reference to the left question form panel.
-     * Required to update form data automatically when the
-     * theme or question selection changes.
-     *
-     * @param quizFragenLeft the linked left panel
-     */
-    public void setPanelLeft(QuizQuestionLeft quizFragenLeft) {
-        this.quizFragenLeft = quizFragenLeft;
-    }
+	/**
+	 * Returns the question currently selected in the UI list.
+	 *
+	 * @return the selected {@link Question}, or {@code null} if nothing chosen
+	 */
+	public Question getSelectedQuestion() {
+		if (themaFragenPanel != null && themaFragenPanel.getFragenList() != null) {
+			return themaFragenPanel.getFragenList().getSelectedValue();
+		}
+		return null;
+	}
 
-    /**
-     * Returns the internal {@link ThemaFragenPanel} that displays
-     * the theme dropdown and question list.
-     *
-     * @return the {@link ThemaFragenPanel} instance used by this panel
-     */
-    public ThemaFragenPanel getThemaFragenPanel() {
-        return themaFragenPanel;
-    }
+	/**
+	 * Links this right-hand panel with the left editing panel, so user selections
+	 * can populate its form.
+	 *
+	 * @param quizFragenLeft the {@link QuizQuestionLeft} reference
+	 */
+	public void setPanelLeft(QuizQuestionLeft quizFragenLeft) {
+		this.quizQuestionLeft = quizFragenLeft;
+	}
 
-    // ------------------- Private Helpers -------------------
+	/**
+	 * Provides access to the underlying {@link ThemaFragenPanel} (useful for
+	 * advanced customization).
+	 *
+	 * @return the {@link ThemaFragenPanel} instance
+	 */
+	public ThemaFragenPanel getThemaFragenPanel() {
+		return themaFragenPanel;
+	}
 
-    /**
-     * Updates the question list when the user selects a new theme.
-     * <ul>
-     *     <li>If "All themes" is selected, shows questions from all themes</li>
-     *     <li>Otherwise, shows questions only from the selected theme</li>
-     * </ul>
-     *
-     * @param selectedThema the currently selected theme
-     */
-    private void updateFragenList(Theme selectedThema) {
-        @SuppressWarnings("unchecked")
-        DefaultListModel<Question> model =
-                (DefaultListModel<Question>) themaFragenPanel.getFragenList().getModel();
-        model.clear();
+	// ------------------- Internal Helper -------------------
 
-        if (selectedThema == ThemaFragenPanel.ALLE_THEMEN) {
-            for (Theme thema : dm.getAllThemen()) {
-                if (thema.getAllQuestions() != null) {
-                    model.addAll(thema.getAllQuestions());
-                }
-            }
-        } else if (selectedThema != null && selectedThema.getAllQuestions() != null) {
-            model.addAll(selectedThema.getAllQuestions());
-        }
-    }
+	/**
+	 * Utility helper: loads questions for a given theme, including the special "All
+	 * themes" case.
+	 */
+	private void loadQuestionsForSelection(Theme selected) {
+		if (selected == null) {
+			setFragen(new ArrayList<>());
+			return;
+		}
+		List<Question> fragen;
+		if (selected == themaFragenPanel.ALLE_THEMEN) {
+			fragen = new ArrayList<>();
+			for (Theme t : dm.getAllThemes()) {
+				fragen.addAll(dm.getQuestionsFor(t));
+			}
+		} else {
+			fragen = dm.getQuestionsFor(selected);
+		}
+		setFragen(fragen);
+	}
 }

@@ -7,9 +7,9 @@ package gui.QuizFragen;
  * Classes implementing this interface handle user-triggered actions from the
  * {@link QuizQuestionBottom} control panel, such as:
  * <ul>
- *     <li>Deleting the currently selected question</li>
- *     <li>Saving a new or edited question</li>
- *     <li>Preparing the creation of a new question</li>
+ * <li>Deleting the currently selected question</li>
+ * <li>Saving a new or edited question</li>
+ * <li>Preparing the creation of a new question</li>
  * </ul>
  * </p>
  * <p>
@@ -21,30 +21,30 @@ package gui.QuizFragen;
  */
 public interface QuizQuestionDelegate {
 
-    /**
-     * Triggered when the user requests deletion of the currently selected question.
-     * <p>
-     * The implementing class should handle validation,
-     * removal from storage, and UI updates.
-     * </p>
-     */
-    void onDeleteQuestion();
+	/**
+	 * Triggered when the user requests deletion of the currently selected question.
+	 * <p>
+	 * The implementing class should handle validation, removal from storage, and UI
+	 * updates.
+	 * </p>
+	 */
+	void onDeleteQuestion();
 
-    /**
-     * Triggered when the user requests saving of the current question.
-     * <p>
-     * This may involve creating a new question or updating an existing one.
-     * Validation and persistence should be performed by the implementing class.
-     * </p>
-     */
-    void onSaveQuestion();
+	/**
+	 * Triggered when the user requests saving of the current question.
+	 * <p>
+	 * This may involve creating a new question or updating an existing one.
+	 * Validation and persistence should be performed by the implementing class.
+	 * </p>
+	 */
+	void onSaveQuestion();
 
-    /**
-     * Triggered when the user requests creation of a new question.
-     * <p>
-     * The implementing class should reset UI fields and selections
-     * to prepare for entering a new question.
-     * </p>
-     */
-    void onNewQuestion();
+	/**
+	 * Triggered when the user requests creation of a new question.
+	 * <p>
+	 * The implementing class should reset UI fields and selections to prepare for
+	 * entering a new question.
+	 * </p>
+	 */
+	void onNewQuestion();
 }
