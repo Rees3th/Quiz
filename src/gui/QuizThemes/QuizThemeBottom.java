@@ -1,4 +1,4 @@
-package gui.QuizThemen;
+package gui.QuizThemes;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -94,6 +94,8 @@ public class QuizThemeBottom extends JPanel {
 			}
 		});
 	}
+
+	// ---------- Public API (Getters & Setters) ----------
 
 	/**
 	 * Returns the current delegate that handles the button actions.

@@ -2,13 +2,14 @@ package gui;
 
 import java.awt.HeadlessException;
 import java.sql.SQLException;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
 
+import javax.swing.JFrame;
+
+import gui.Panels.StatisticPanel;
 import gui.Panels.TabPanel;
 import gui.Quiz.QuizPanel;
-import gui.QuizFragen.QuizQuestionPanel;
-import gui.QuizThemen.QuizThemePanel;
+import gui.QuizQuestion.QuizQuestionPanel;
+import gui.QuizThemes.QuizThemePanel;
 import persistence.DBDataManager;
 
 /**
@@ -95,19 +96,20 @@ public class QuizApp extends JFrame {
 		QuizQuestionPanel quizQuestionPanel = new QuizQuestionPanel(dm);
 
 		// Connect themes panel with questions panel so updates are synced
-		quizThemenPanel.setQuizFragenPanel(quizQuestionPanel);
+		quizThemenPanel.setQuizQuestionPanel(quizQuestionPanel);
 
 		// Panel to run the actual quiz gameplay
 		QuizPanel quizPanel = new QuizPanel(dm);
 
+		StatisticPanel statisticPanel = new StatisticPanel(dm);
 		// ---------------- Create Tab Panel ----------------
-		TabPanel tabPanel = new TabPanel(quizThemenPanel, quizQuestionPanel, quizPanel);
+		TabPanel tabPanel = new TabPanel(quizThemenPanel, quizQuestionPanel, quizPanel, statisticPanel);
 
 		// Add tabs with user-facing names
-		tabPanel.addTab("Quiz Themen", quizThemenPanel); // Manage quiz topics
-		tabPanel.addTab("Quiz Fragen", quizQuestionPanel); // Manage quiz questions
+		tabPanel.addTab("Add Theme", quizThemenPanel); // Manage quiz topics
+		tabPanel.addTab("Add Question", quizQuestionPanel); // Manage quiz questions
 		tabPanel.addTab("Quiz", quizPanel); // Play the quiz
-		tabPanel.addTab("Statistik", new JPanel()); // Placeholder tab
+		tabPanel.addTab("Statistics", statisticPanel); 
 
 		// ---------------- Add TabPanel to Frame ----------------
 		add(tabPanel);

@@ -64,7 +64,7 @@ public class QuizPanelLeftLayout {
 		panel.add(Box.createVerticalStrut(10));
 
 		// --- Question ---
-		panel.add(new FragePanel(frageArea));
+		panel.add(new questionPanel(frageArea));
 		panel.add(Box.createVerticalStrut(15));
 
 		// --- Answer header ---

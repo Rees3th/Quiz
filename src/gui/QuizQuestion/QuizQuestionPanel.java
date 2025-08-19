@@ -1,4 +1,4 @@
-package gui.QuizFragen;
+package gui.QuizQuestion;
 
 import java.awt.BorderLayout;
 import java.util.List;
@@ -92,8 +92,6 @@ public class QuizQuestionPanel extends JPanel implements QuizQuestionDelegate {
 		quizQuestionBottom.setDelegate(this);
 	}
 
-	// ------------------- QuizQuestionDelegate Methods -------------------
-
 	/**
 	 * Saves the current question entered in the left form.
 	 * <p>
@@ -108,7 +106,7 @@ public class QuizQuestionPanel extends JPanel implements QuizQuestionDelegate {
 	 */
 	@Override
 	public void onSaveQuestion() {
-		Theme selectedThema = (Theme) quizQuestionRight.getThemaFragenPanel().getThemaComboBox().getSelectedItem();
+		Theme selectedThema = (Theme) quizQuestionRight.getQuizQuestionRightLayout().getThemaComboBox().getSelectedItem();
 
 		Question q = quizQuestionLeft.getSelectedQuestion(selectedThema);
 
@@ -128,7 +126,7 @@ public class QuizQuestionPanel extends JPanel implements QuizQuestionDelegate {
 
 		// On success: refresh and clear
 		reloadQuestionsForTheme(q.getThema());
-		quizQuestionLeft.setFrage(null);
+		quizQuestionLeft.setQuestion(null);
 		quizQuestionBottom.getMessagePanel().setText(QuestionValidator.MSG_SAVE_SUCCESS);
 	}
 
@@ -150,7 +148,7 @@ public class QuizQuestionPanel extends JPanel implements QuizQuestionDelegate {
 			quizQuestionBottom.getMessagePanel().setText(QuestionValidator.MSG_DELETE_ERROR_PREFIX + result);
 		} else {
 			reloadQuestionsForTheme(q.getThema());
-			quizQuestionLeft.setFrage(null);
+			quizQuestionLeft.setQuestion(null);
 		}
 	}
 
@@ -160,11 +158,9 @@ public class QuizQuestionPanel extends JPanel implements QuizQuestionDelegate {
 	 */
 	@Override
 	public void onNewQuestion() {
-		quizQuestionLeft.setFrage(null);
-		quizQuestionRight.getThemaFragenPanel().getFragenList().clearSelection();
+		quizQuestionLeft.setQuestion(null);
+		quizQuestionRight.getQuizQuestionRightLayout().getQuestionList().clearSelection();
 	}
-
-	// ------------------- Data Sync Methods -------------------
 
 	/**
 	 * Reloads all themes from DB and refreshes the right panel.
@@ -181,11 +177,11 @@ public class QuizQuestionPanel extends JPanel implements QuizQuestionDelegate {
 	 */
 	public void reloadQuestionsForTheme(Theme theme) {
 		if (theme == null) {
-			quizQuestionRight.setFragen(List.of());
+			quizQuestionRight.setQuestion(List.of());
 			return;
 		}
 		List<Question> fragen = dm.getQuestionsFor(theme);
-		quizQuestionRight.setFragen(fragen);
+		quizQuestionRight.setQuestion(fragen);
 	}
 
 	/**
@@ -195,6 +191,6 @@ public class QuizQuestionPanel extends JPanel implements QuizQuestionDelegate {
 	 * @param questions questions to show
 	 */
 	public void setQuestions(List<Question> questions) {
-		quizQuestionRight.setFragen(questions);
+		quizQuestionRight.setQuestion(questions);
 	}
 }

@@ -1,13 +1,19 @@
 package gui.Quiz;
 
 import java.awt.BorderLayout;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.Random;
+
 import javax.swing.DefaultListModel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 
 import persistence.DBDataManager;
 import quizLogic.Answer;
 import quizLogic.Question;
+import quizLogic.QuizStatistic;
 import quizLogic.QuizValidator;
 
 /**
@@ -41,10 +47,11 @@ import quizLogic.QuizValidator;
  * {@link DBDataManager}, which serves as the abstraction for persistent
  * storage.
  * </p>
- *
+ * 
  * @author Oleg Kapirulya
  */
 public class QuizPanel extends JPanel implements QuizDelegate {
+
 	/** Serial version UID for serialization (Swing best practice). */
 	private static final long serialVersionUID = 1L;
 
@@ -53,7 +60,9 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 	 */
 	private final QuizPanelLeft quizPanelLeft;
 
-	/** Right panel that lists available quiz themes and questions. */
+	/**
+	 * Right panel that lists available quiz themes and questions.
+	 */
 	private final QuizPanelRight quizPanelRight;
 
 	/**
@@ -69,8 +78,10 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 
 	/**
 	 * Constructs a new {@code QuizPanel} and initializes all sub-panels.
+	 *
 	 * <p>
 	 * Panels are connected in the following way:
+	 * </p>
 	 * <ul>
 	 * <li>The right panel ({@link QuizPanelRight}) is aware of the left panel so
 	 * that it can update it when a question is selected.</li>
@@ -84,20 +95,15 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 	public QuizPanel(DBDataManager dm) {
 		// Use BorderLayout with horizontal/vertical gaps for better spacing
 		super(new BorderLayout(10, 10));
-
 		this.dm = dm;
-
 		// Instantiate left, right, and bottom panels
 		quizPanelLeft = new QuizPanelLeft(dm);
 		quizPanelRight = new QuizPanelRight(dm);
 		quizButtonPanel = new QuizPanelBottom();
-
 		// Link the panels together (right panel needs to know the left one)
 		quizPanelRight.setPanelLeft(quizPanelLeft);
-
 		// Register this panel as delegate for bottom control events
 		quizButtonPanel.setDelegate(this);
-
 		// Add components to the main layout
 		add(quizPanelLeft, BorderLayout.WEST);
 		add(quizPanelRight, BorderLayout.EAST);
@@ -106,6 +112,7 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 
 	/**
 	 * Shows the correct answer for the currently selected question.
+	 *
 	 * <p>
 	 * - If no question is currently selected, an error message is shown. -
 	 * Otherwise, the correct answer is determined, displayed in the right-side
@@ -115,57 +122,77 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 	@Override
 	public void onShowAnswer() {
 		// Get the currently selected question from the right-side question list
-		Question q = quizPanelRight.getThemaFragenPanel().getFragenList().getSelectedValue();
-
+		Question q = quizPanelRight.getQuizQuestionRightLayout().getQuestionList().getSelectedValue();
 		// If nothing is selected, inform the user and stop here
 		if (q == null) {
 			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_NO_QUESTION_SELECTED);
 			return;
 		}
-
-		// Find the text of the first correct answer (in case multiple exist, only first
-		// is shown)
-		String correctAnswerText = "";
+		// Collect all correct answers
+		List<String> correctAnswers = new ArrayList<>();
 		for (Answer a : q.getAnswers()) {
 			if (a.isCorrect()) {
-				correctAnswerText = a.getText();
-				break;
+				correctAnswers.add(a.getText());
 			}
 		}
-
+		String correctAnswerText = String.join(", ", correctAnswers);
 		// Show correct answer on the right panel as feedback
-		quizPanelRight.getThemaFragenPanel()
+		quizPanelRight.getQuizQuestionRightLayout()
 				.showFeedbackAnswer(QuizValidator.MSG_CORRECT_ANSWER_IS + correctAnswerText);
-
 		// Clear any message on the left panel
 		quizPanelLeft.getMessageField().setText("");
-
 		// Mark the question as answered in the right panel (e.g., highlight state)
 		quizPanelRight.markAnswered(q.getId());
 	}
 
 	/**
-	 * Saves the currently given answer by the user.
+	 * Saves the user's selected answer for the currently displayed question.
+	 *
 	 * <p>
-	 * Saving here means:
-	 * <ul>
-	 * <li>Disabling the checkboxes so no changes are possible afterwards</li>
-	 * <li>Showing a confirmation message in the left-side panel</li>
-	 * </ul>
-	 * Note: actual persistence logic may be handled elsewhere.
+	 * - Validates if a question is selected and if any answer was chosen. -
+	 * Compares user selection with correct answers. - Saves the result in quiz
+	 * statistics. - Provides feedback to the user in the left panel's message
+	 * field.
 	 * </p>
 	 */
 	@Override
 	public void onSaveAnswer() {
-		// Disable further changes
-		quizPanelLeft.setCheckboxesEnabled(false);
-
-		// Provide feedback to the user
-		quizPanelLeft.getMessageField().setText(QuizValidator.MSG_ANSWER_SAVED);
+		// Get currently selected question and user selection
+		Question q = quizPanelRight.getQuizQuestionRightLayout().getQuestionList().getSelectedValue();
+		if (q == null) {
+			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_NO_QUESTION_SELECTED);
+			return;
+		}
+		// Check which checkboxes are selected:
+		boolean correct = true; // assume correct unless found otherwise
+		List<Answer> answers = q.getAnswers();
+		boolean answerSelected = false;
+		for (int i = 0; i < answers.size(); i++) {
+			boolean chosen = quizPanelLeft.getCheckboxes()[i].isSelected();
+			if (chosen)
+				answerSelected = true;
+			if (answers.get(i).isCorrect() != chosen)
+				correct = false;
+		}
+		// If no answer selected, show a hint
+		if (!answerSelected) {
+			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_NO_SELECTION_MADE);
+			return;
+		}
+		// Save statistics about the answer
+		QuizStatistic stat = new QuizStatistic(q.getId(), correct, new Date());
+		dm.getStatisticDAO().insert(stat);
+		// Give feedback to user
+		if (correct) {
+			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_CORRECT);
+		} else {
+			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_WRONG_WITH_HINT);
+		}
 	}
 
 	/**
 	 * Selects a new random question from the list of available ones.
+	 *
 	 * <p>
 	 * Logic: - Ensure that there are questions available. - Pick a random index
 	 * from the list. - Retrieve the full question (including its answers) from the
@@ -176,49 +203,49 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 	@Override
 	public void onNewQuestion() {
 		// Make sure the latest list of questions is displayed
-		quizPanelRight.getThemaFragenPanel().showFragenList();
-
+		quizPanelRight.getQuizQuestionRightLayout().showQuestionList();
 		// Retrieve the JList containing all questions
-		javax.swing.JList<Question> fragenList = quizPanelRight.getThemaFragenPanel().getFragenList();
+		JList<Question> fragenList = quizPanelRight.getQuizQuestionRightLayout().getQuestionList();
 		DefaultListModel<Question> model = (DefaultListModel<Question>) fragenList.getModel();
-
 		// Case 1: No questions available -> display message and clear panel
 		if (model.getSize() == 0) {
 			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_NO_QUESTIONS_AVAILABLE);
 			quizPanelLeft.setFrage(null);
 			return;
 		}
-
 		// Case 2: Randomly choose an index from question list
 		int randomIndex = random.nextInt(model.getSize());
 		Question randomQuestionModelRef = model.getElementAt(randomIndex);
-
 		// Load the complete question including answers from DB
 		Question fullQ = dm.getFullQuestionById(randomQuestionModelRef.getId());
-
 		// Set the selection in the question list (so UI highlights it)
 		fragenList.setSelectedIndex(randomIndex);
-
 		// Display the full question (with answers) on the left panel
 		quizPanelLeft.setFrage(fullQ);
-
 		// Clear any old messages
 		quizPanelLeft.getMessageField().setText("");
-
 		// Re-enable checkboxes so user can answer
 		quizPanelLeft.setCheckboxesEnabled(true);
-
 		// Reset shown answer feedback (right panel visual reset after switching)
-		quizPanelRight.resetGezeigteAntworten();
+		quizPanelRight.resetActualQuestion();
 	}
 
 	/**
-	 * Getter for the right-side quiz panel.
+	 * Returns the right-side quiz panel managing themes and questions list.
 	 *
-	 * @return the instance of {@link QuizPanelRight} that manages themes and
-	 *         questions list
+	 * @return the instance of {@link QuizPanelRight}
 	 */
 	public QuizPanelRight getQuizPanelRight() {
 		return quizPanelRight;
+	}
+
+	/**
+	 * Returns the data manager instance used for database access.
+	 *
+	 * @return the {@link DBDataManager} instance managing data retrieval and
+	 *         persistence
+	 */
+	public DBDataManager getDm() {
+		return dm;
 	}
 }

@@ -10,7 +10,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-import gui.QuizThemen.QuizThemeLeft;
+import gui.QuizThemes.QuizThemeLeft;
 
 /**
  * {@code QuizThemenLeftLayout} is a layout builder utility for the left panel

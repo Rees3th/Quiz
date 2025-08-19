@@ -6,8 +6,8 @@ import java.awt.Font;
 import javax.swing.JTabbedPane;
 
 import gui.Quiz.QuizPanel;
-import gui.QuizFragen.QuizQuestionPanel;
-import gui.QuizThemen.QuizThemePanel;
+import gui.QuizQuestion.QuizQuestionPanel;
+import gui.QuizThemes.QuizThemePanel;
 
 /**
  * {@code TabPanel} is a customized {@link JTabbedPane} that contains the main
@@ -53,11 +53,11 @@ public class TabPanel extends JTabbedPane {
 	 *
 	 * @param quizThemenPanel the {@link QuizThemePanel} used in the "Quiz Themes"
 	 *                        tab
-	 * @param quizFragenPanel the {@link QuizQuestionPanel} used in the "Quiz
+	 * @param quizQuestionPanel the {@link QuizQuestionPanel} used in the "Quiz
 	 *                        Questions" tab
 	 * @param quizPanel       the {@link QuizPanel} used in the "Quiz" tab
 	 */
-	public TabPanel(QuizThemePanel quizThemenPanel, QuizQuestionPanel quizFragenPanel, QuizPanel quizPanel) {
+	public TabPanel(QuizThemePanel quizThemenPanel, QuizQuestionPanel quizQuestionPanel, QuizPanel quizPanel, StatisticPanel statisticPanel) {
 
 		super(JTabbedPane.TOP);
 
@@ -68,9 +68,11 @@ public class TabPanel extends JTabbedPane {
 		addChangeListener(e -> {
 			int tab = getSelectedIndex();
 			if (tab == 1) { // "Quiz Questions" tab
-				quizFragenPanel.reloadThemes();
+				quizQuestionPanel.reloadThemes();
 			} else if (tab == 2) { // "Quiz" tab
-				quizPanel.getQuizPanelRight().reloadAllThemenUndFragen();
+				quizPanel.getQuizPanelRight().reloadAllThemesAndQuestions();
+			} else if (tab == 3) { // "Statistic" tab
+				statisticPanel.fillWithData(quizPanel.getDm());
 			}
 		});
 	}

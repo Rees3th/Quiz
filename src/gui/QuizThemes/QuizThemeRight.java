@@ -1,4 +1,4 @@
-package gui.QuizThemen;
+package gui.QuizThemes;
 
 import java.awt.Dimension;
 import java.util.Collection;
@@ -33,7 +33,7 @@ public class QuizThemeRight extends JPanel {
 	private static final long serialVersionUID = 1L;
 
 	/** Reference to the left panel for updating when the selected theme changes. */
-	private QuizThemeLeft quizThemenLeft;
+	private QuizThemeLeft quizThemeLeft;
 
 	/** The panel containing the list of quiz themes. */
 	private ThemaPanel themaPanel;
@@ -76,12 +76,14 @@ public class QuizThemeRight extends JPanel {
 		themaPanel.getThemenList().addListSelectionListener(e -> {
 			if (!e.getValueIsAdjusting()) {
 				Theme selected = themaPanel.getThemenList().getSelectedValue();
-				if (quizThemenLeft != null) {
-					quizThemenLeft.setThema(selected);
+				if (quizThemeLeft != null) {
+					quizThemeLeft.setThema(selected);
 				}
 			}
 		});
 	}
+
+	// ---------- Public API (Getters & Setters) ----------
 
 	/**
 	 * Links this right-hand panel to the left-hand theme panel.
@@ -93,7 +95,7 @@ public class QuizThemeRight extends JPanel {
 	 * @param quizThemenLeft the left theme panel to associate with this panel
 	 */
 	public void setPanelLeft(QuizThemeLeft quizThemenLeft) {
-		this.quizThemenLeft = quizThemenLeft;
+		this.quizThemeLeft = quizThemenLeft;
 	}
 
 	/**

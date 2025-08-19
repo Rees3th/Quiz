@@ -1,4 +1,4 @@
-package gui.QuizThemen;
+package gui.QuizThemes;
 
 import java.awt.BorderLayout;
 import java.sql.SQLException;
@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
-import gui.QuizFragen.QuizQuestionPanel;
+import gui.QuizQuestion.QuizQuestionPanel;
 import persistence.DBDataManager;
 import quizLogic.Theme;
 import quizLogic.ThemeValidator;
@@ -29,7 +29,7 @@ import quizLogic.ThemeValidator;
  * </p>
  * 
  * <p>
- * This panel connects to the {@link QuizDataManager} to load, save, and delete
+ * This panel connects to the {@link DBDataManager} to load, save, and delete
  * quiz themes. It can also notify a connected {@link QuizQuestionPanel} to
  * refresh its theme data.
  * </p>
@@ -42,19 +42,19 @@ public class QuizThemePanel extends JPanel implements QuizThemeDelegate {
 	private static final long serialVersionUID = 1L;
 
 	/** Right side panel displaying all quiz themes in a list. */
-	private QuizThemeRight quizThemenRight;
+	private QuizThemeRight quizThemeRight;
 
 	/** Bottom action panel with buttons (New, Save, Delete). */
-	private QuizThemeBottom quizThemenBottom;
+	private QuizThemeBottom quizThemeBottom;
 
 	/** Left side panel for entering or editing a quiz theme. */
-	private QuizThemeLeft quizThemenLeft;
+	private QuizThemeLeft quizThemeLeft;
 
 	/**
 	 * Optional reference to the Quiz Questions panel for theme list
 	 * synchronization.
 	 */
-	private QuizQuestionPanel quizFragenPanel;
+	private QuizQuestionPanel quizQuestionPanel;
 
 //    /** Data manager for retrieving, saving, and deleting quiz themes. */
 //    private final QuizDataManager dm;
@@ -64,7 +64,7 @@ public class QuizThemePanel extends JPanel implements QuizThemeDelegate {
 	/**
 	 * Constructs the quiz theme management panel.
 	 * <ul>
-	 * <li>Initializes the {@link QuizDataManager}</li>
+	 * <li>Initializes the {@link DBDataManager}</li>
 	 * <li>Sets a {@link BorderLayout}</li>
 	 * <li>Creates UI components</li>
 	 * </ul>
@@ -83,20 +83,20 @@ public class QuizThemePanel extends JPanel implements QuizThemeDelegate {
 	 * bottom panels, and setting delegate links.
 	 */
 	private void initUI() {
-		quizThemenLeft = new QuizThemeLeft();
-		quizThemenRight = new QuizThemeRight(dm.getAllThemes());
-		quizThemenBottom = new QuizThemeBottom();
+		quizThemeLeft = new QuizThemeLeft();
+		quizThemeRight = new QuizThemeRight(dm.getAllThemes());
+		quizThemeBottom = new QuizThemeBottom();
 
 		// Link the right panel with the left panel for selection updates
-		quizThemenRight.setPanelLeft(quizThemenLeft);
+		quizThemeRight.setPanelLeft(quizThemeLeft);
 
 		// Set this panel as delegate for bottom panel actions
-		quizThemenBottom.setDelegate(this);
+		quizThemeBottom.setDelegate(this);
 
 		// Add panels to layout
-		add(quizThemenLeft, BorderLayout.WEST);
-		add(quizThemenRight, BorderLayout.EAST);
-		add(quizThemenBottom, BorderLayout.SOUTH);
+		add(quizThemeLeft, BorderLayout.WEST);
+		add(quizThemeRight, BorderLayout.EAST);
+		add(quizThemeBottom, BorderLayout.SOUTH);
 	}
 
 	/**
@@ -108,7 +108,7 @@ public class QuizThemePanel extends JPanel implements QuizThemeDelegate {
 	 */
 	@Override
 	public void onDeleteTheme() {
-		Theme selected = quizThemenRight.getThemaPanel().getThemenList().getSelectedValue();
+		Theme selected = quizThemeRight.getThemaPanel().getThemenList().getSelectedValue();
 		if (selected == null)
 			return;
 
@@ -128,7 +128,7 @@ public class QuizThemePanel extends JPanel implements QuizThemeDelegate {
 
 			// Reload the themes list and clear the input fields
 			reloadThemenUI();
-			quizThemenLeft.clearFields();
+			quizThemeLeft.clearFields();
 		}
 	}
 
@@ -141,14 +141,14 @@ public class QuizThemePanel extends JPanel implements QuizThemeDelegate {
 	 */
 	@Override
 	public void onSaveTheme() {
-		String titel = quizThemenLeft.getTitelField().getText().trim();
-		String info = quizThemenLeft.getInfoArea().getText();
-		Theme selected = quizThemenRight.getThemaPanel().getThemenList().getSelectedValue();
+		String titel = quizThemeLeft.getTitelField().getText().trim();
+		String info = quizThemeLeft.getInfoArea().getText();
+		Theme selected = quizThemeRight.getThemaPanel().getThemenList().getSelectedValue();
 
 		// Validate user input
 		String validationError = ThemeValidator.validate(titel, info, dm.getAllThemes(), selected);
 		if (validationError != null) {
-			quizThemenBottom.getMessagePanel().setText(validationError);
+			quizThemeBottom.getMessagePanel().setText(validationError);
 			return;
 		}
 
@@ -166,15 +166,15 @@ public class QuizThemePanel extends JPanel implements QuizThemeDelegate {
 		// Save to the data manager
 		String error = dm.saveTheme(selected);
 		if (error != null) {
-			quizThemenBottom.getMessagePanel().setText(ThemeValidator.MSG_SAVE_ERROR_PREFIX + error);
+			quizThemeBottom.getMessagePanel().setText(ThemeValidator.MSG_SAVE_ERROR_PREFIX + error);
 			return;
 		}
 
 		// Refresh view and show the saved theme as selected
 		reloadThemenUI();
-		quizThemenRight.getThemaPanel().getThemenList().setSelectedValue(selected, true);
-		quizThemenLeft.setThema(selected);
-		quizThemenBottom.getMessagePanel().setText(ThemeValidator.MSG_SAVE_SUCCESS);
+		quizThemeRight.getThemaPanel().getThemenList().setSelectedValue(selected, true);
+		quizThemeLeft.setThema(selected);
+		quizThemeBottom.getMessagePanel().setText(ThemeValidator.MSG_SAVE_SUCCESS);
 	}
 
 	/**
@@ -183,8 +183,8 @@ public class QuizThemePanel extends JPanel implements QuizThemeDelegate {
 	 */
 	@Override
 	public void onNewTheme() {
-		quizThemenRight.getThemaPanel().getThemenList().clearSelection();
-		quizThemenLeft.clearFields();
+		quizThemeRight.getThemaPanel().getThemenList().clearSelection();
+		quizThemeLeft.clearFields();
 	}
 
 	/**
@@ -192,14 +192,16 @@ public class QuizThemePanel extends JPanel implements QuizThemeDelegate {
 	 * reload of themes in the associated questions panel.
 	 */
 	private void reloadThemenUI() {
-		quizThemenRight.setThemen(dm.getAllThemes());
-		if (quizFragenPanel != null) {
-			quizFragenPanel.reloadThemes();
+		quizThemeRight.setThemen(dm.getAllThemes());
+		if (quizQuestionPanel != null) {
+			quizQuestionPanel.reloadThemes();
 		}
 	}
 
+	// ---------- Public API (Getters & Setters) ----------
+
 	/**
-	 * Gets the theme {@link QuizDataManager}.
+	 * Gets the theme {@link DBDataManager}.
 	 *
 	 * @return the data manager instance
 	 */
@@ -212,7 +214,7 @@ public class QuizThemePanel extends JPanel implements QuizThemeDelegate {
 	 *
 	 * @param quizFragenPanel the question panel to associate
 	 */
-	public void setQuizFragenPanel(QuizQuestionPanel quizFragenPanel) {
-		this.quizFragenPanel = quizFragenPanel;
+	public void setQuizQuestionPanel(QuizQuestionPanel quizQuestionPanel) {
+		this.quizQuestionPanel = quizQuestionPanel;
 	}
 }

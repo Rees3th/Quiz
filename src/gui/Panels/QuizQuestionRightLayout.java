@@ -44,7 +44,7 @@ import quizLogic.Theme;
  * </p>
  * 
  * <p>
- * The first combo box item is the special constant {@link #ALLE_THEMEN},
+ * The first combo box item is the special constant {@link #ALL_THEMES},
  * representing "All themes". Selecting it displays questions from all available
  * themes.
  * </p>
@@ -56,7 +56,7 @@ import quizLogic.Theme;
  * 
  * @author Oleg Kapirulya
  */
-public class ThemaFragenPanel extends JPanel {
+public class QuizQuestionRightLayout extends JPanel {
 	/** Serial version UID for serialization compatibility. */
 	private static final long serialVersionUID = 1L;
 
@@ -64,16 +64,16 @@ public class ThemaFragenPanel extends JPanel {
 	private JComboBox<Theme> themaComboBox;
 
 	/** JList displaying the questions for the selected theme. */
-	private JList<Question> fragenList;
+	private JList<Question> questionList;
 
 	/** List model backing the question list. */
-	private DefaultListModel<Question> fragenModel;
+	private DefaultListModel<Question> questionModel;
 
 	/** Collection of all available themes. */
-	private Collection<Theme> allThemen;
+	private Collection<Theme> AllThemes;
 
 	/** Button to toggle between theme info and question list. */
-	private JButton themaInfoButton;
+	private JButton themeInfoButton;
 
 	/** Panel showing theme information text. */
 	private JPanel infoPanel;
@@ -97,7 +97,7 @@ public class ThemaFragenPanel extends JPanel {
 	private boolean showingInfo = false;
 
 	/** Label above the question list. */
-	private JLabel fragenLabel;
+	private JLabel questionLabel;
 
 	/** Feedback panel shown for displaying correct answers or messages. */
 	private JPanel feedbackPanel;
@@ -112,7 +112,7 @@ public class ThemaFragenPanel extends JPanel {
 	 * Special constant theme representing "All themes" in the combo box. Selecting
 	 * this special item means showing questions from all themes.
 	 */
-	public static final Theme ALLE_THEMEN = new Theme() {
+	public static final Theme ALL_THEMES = new Theme() {
 		@Override
 		public String toString() {
 			return "Alle Themen";
@@ -127,9 +127,9 @@ public class ThemaFragenPanel extends JPanel {
 	 *               database
 	 * @param themen collection of themes to display; may be {@code null} or empty
 	 */
-	public ThemaFragenPanel(DBDataManager dm, Collection<Theme> themen) {
+	public QuizQuestionRightLayout(DBDataManager dm, Collection<Theme> themen) {
 		this.dm = dm;
-		this.allThemen = themen;
+		this.AllThemes = themen;
 
 		// Use vertical layout for the whole panel
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -140,15 +140,15 @@ public class ThemaFragenPanel extends JPanel {
 		headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.X_AXIS));
 
 		// Label displayed above the question list
-		setFragenLabel(new JLabel("Fragen zum Thema"));
-		headerPanel.add(getFragenLabel());
+		setQuestionLabel(new JLabel("Fragen zum Thema"));
+		headerPanel.add(getQuestionLabel());
 
 		// Horizontal glue for spacing
 		headerPanel.add(Box.createHorizontalGlue());
 
 		// Button to toggle showing theme information
-		themaInfoButton = new JButton("Thema anzeigen");
-		headerPanel.add(themaInfoButton);
+		themeInfoButton = new JButton("Thema anzeigen");
+		headerPanel.add(themeInfoButton);
 		headerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
 		// Add header panel to main panel
@@ -159,7 +159,7 @@ public class ThemaFragenPanel extends JPanel {
 		themaComboBox = new JComboBox<>();
 
 		// Add special "All themes" entry first
-		themaComboBox.addItem(ALLE_THEMEN);
+		themaComboBox.addItem(ALL_THEMES);
 
 		// Add actual themes if available
 		if (themen != null) {
@@ -194,11 +194,11 @@ public class ThemaFragenPanel extends JPanel {
 		infoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
 		// ---------- Question list panel ----------
-		fragenModel = new DefaultListModel<>();
-		fragenList = new JList<>(fragenModel);
-		fragenList.setVisibleRowCount(10);
+		questionModel = new DefaultListModel<>();
+		questionList = new JList<>(questionModel);
+		questionList.setVisibleRowCount(10);
 
-		JScrollPane scrollPane = new JScrollPane(fragenList);
+		JScrollPane scrollPane = new JScrollPane(questionList);
 		scrollPane.setPreferredSize(new Dimension(260, 310));
 
 		listPanel = new JPanel();
@@ -231,7 +231,7 @@ public class ThemaFragenPanel extends JPanel {
 		add(centerPanel);
 
 		// Load initial questions into the list
-		fillFragenList();
+		fillQuestionList();
 
 		// ---------- Event handlers ----------
 
@@ -239,15 +239,15 @@ public class ThemaFragenPanel extends JPanel {
 		// accordingly
 		themaComboBox.addActionListener(e -> {
 			if (!showingInfo) {
-				fillFragenList(); // Update questions list for selected theme
+				fillQuestionList(); // Update questions list for selected theme
 			} else {
 				Theme selected = (Theme) themaComboBox.getSelectedItem();
-				updateThemaInfo(selected); // Update info text for selected theme
+				updateThemeInfo(selected); // Update info text for selected theme
 			}
 		});
 
 		// Button toggles between question list view and theme info view
-		themaInfoButton.addActionListener(e -> toggleInfoAnzeige());
+		themeInfoButton.addActionListener(e -> toggleInfoPanel());
 	}
 
 	/**
@@ -255,27 +255,27 @@ public class ThemaFragenPanel extends JPanel {
 	 * selected theme. If "Alle Themen" is selected, questions from all themes
 	 * except the special "All themes" item are shown.
 	 */
-	public void fillFragenList() {
-		fragenModel.clear();
+	public void fillQuestionList() {
+		questionModel.clear();
 
 		Theme selected = (Theme) themaComboBox.getSelectedItem();
 
-		if (selected == ALLE_THEMEN) {
+		if (selected == ALL_THEMES) {
 			// Add questions from all themes except the special "Alle Themen" entry
-			for (Theme t : allThemen) {
-				if (t == ALLE_THEMEN)
+			for (Theme t : AllThemes) {
+				if (t == ALL_THEMES)
 					continue;
 
 				List<Question> questions = dm.getQuestionsFor(t);
 				for (Question q : questions) {
-					fragenModel.addElement(q);
+					questionModel.addElement(q);
 				}
 			}
 		} else if (selected != null) {
 			// Add questions for the selected single theme
 			List<Question> questions = dm.getQuestionsFor(selected);
 			for (Question q : questions) {
-				fragenModel.addElement(q);
+				questionModel.addElement(q);
 			}
 		}
 	}
@@ -286,7 +286,7 @@ public class ThemaFragenPanel extends JPanel {
 	 * @param thema the selected {@link Theme} whose description is shown; may be
 	 *              {@code null}
 	 */
-	private void updateThemaInfo(Theme thema) {
+	private void updateThemeInfo(Theme thema) {
 		if (thema != null) {
 			infoArea.setText(thema.getText() != null ? thema.getText() : "");
 		}
@@ -296,17 +296,17 @@ public class ThemaFragenPanel extends JPanel {
 	 * Toggles between showing the question list and the theme info panel. Switches
 	 * the card layout view and updates the toggle button text accordingly.
 	 */
-	private void toggleInfoAnzeige() {
+	private void toggleInfoPanel() {
 		showingInfo = !showingInfo;
 
 		if (showingInfo) {
 			Theme selected = (Theme) themaComboBox.getSelectedItem();
-			updateThemaInfo(selected);
+			updateThemeInfo(selected);
 			cardLayout.show(centerPanel, "INFO");
-			themaInfoButton.setText("Liste anzeigen");
+			themeInfoButton.setText("Liste anzeigen");
 		} else {
 			cardLayout.show(centerPanel, "FRAGEN");
-			themaInfoButton.setText("Thema anzeigen");
+			themeInfoButton.setText("Thema anzeigen");
 		}
 
 		revalidate();
@@ -319,19 +319,19 @@ public class ThemaFragenPanel extends JPanel {
 	 *
 	 * @param neueThemen the collection of new {@link Theme}s to display
 	 */
-	public void setThemen(Collection<Theme> neueThemen) {
+	public void setThemes(Collection<Theme> neueThemen) {
 		themaComboBox.removeAllItems();
-		themaComboBox.addItem(ALLE_THEMEN);
+		themaComboBox.addItem(ALL_THEMES);
 
 		if (neueThemen != null) {
 			for (Theme t : neueThemen) {
 				// Exclude the special "All themes" item if present
-				if (t != ALLE_THEMEN)
+				if (t != ALL_THEMES)
 					themaComboBox.addItem(t);
 			}
 		}
 
-		this.allThemen = neueThemen;
+		this.AllThemes = neueThemen;
 	}
 
 	/**
@@ -343,14 +343,14 @@ public class ThemaFragenPanel extends JPanel {
 	public void showFeedbackAnswer(String answerText) {
 		infoArea.setText(answerText);
 		cardLayout.show(centerPanel, "INFO");
-		themaInfoButton.setText("Zurück");
+		themeInfoButton.setText("Zurück");
 		showingInfo = true;
 	}
 
 	/**
 	 * Resets the center panel to show the question list view.
 	 */
-	public void showFragenList() {
+	public void showQuestionList() {
 		cardLayout.show(centerPanel, "FRAGEN");
 		revalidate();
 		repaint();
@@ -361,11 +361,11 @@ public class ThemaFragenPanel extends JPanel {
 	 * 
 	 * @param fragen list of {@link Question}s to display; can be null or empty
 	 */
-	public void setFragen(List<Question> fragen) {
-		fragenModel.clear();
+	public void setQuestion(List<Question> fragen) {
+		questionModel.clear();
 		if (fragen != null) {
 			for (Question q : fragen) {
-				fragenModel.addElement(q);
+				questionModel.addElement(q);
 			}
 		}
 	}
@@ -376,8 +376,8 @@ public class ThemaFragenPanel extends JPanel {
 	 * @param index index of the question to remove; must be within list bounds
 	 */
 	public void removeQuestionAt(int index) {
-		if (index >= 0 && index < fragenModel.getSize()) {
-			fragenModel.remove(index);
+		if (index >= 0 && index < questionModel.getSize()) {
+			questionModel.remove(index);
 		}
 	}
 
@@ -387,14 +387,14 @@ public class ThemaFragenPanel extends JPanel {
 	 * @param question the {@link Question} to add
 	 */
 	public void addQuestion(Question question) {
-		fragenModel.addElement(question);
+		questionModel.addElement(question);
 	}
 
 	/**
 	 * @return the internal {@link JList} component displaying questions
 	 */
-	public JList<Question> getFragenList() {
-		return fragenList;
+	public JList<Question> getQuestionList() {
+		return questionList;
 	}
 
 	/**
@@ -408,7 +408,7 @@ public class ThemaFragenPanel extends JPanel {
 	 * @return the button used to toggle theme info view
 	 */
 	public JButton getThemaInfoButton() {
-		return themaInfoButton;
+		return themeInfoButton;
 	}
 
 	/**
@@ -421,8 +421,8 @@ public class ThemaFragenPanel extends JPanel {
 	/**
 	 * @return the label above the question list
 	 */
-	public JLabel getFragenLabel() {
-		return fragenLabel;
+	public JLabel getQuestionLabel() {
+		return questionLabel;
 	}
 
 	/**
@@ -430,7 +430,7 @@ public class ThemaFragenPanel extends JPanel {
 	 *
 	 * @param fragenLabel the new {@link JLabel} to set
 	 */
-	public void setFragenLabel(JLabel fragenLabel) {
-		this.fragenLabel = fragenLabel;
+	public void setQuestionLabel(JLabel questionLabel) {
+		this.questionLabel = questionLabel;
 	}
 }

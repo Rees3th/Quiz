@@ -1,4 +1,4 @@
-package gui.QuizFragen;
+package gui.QuizQuestion;
 
 import java.awt.BorderLayout;
 

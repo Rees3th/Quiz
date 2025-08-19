@@ -1,4 +1,4 @@
-package gui.QuizFragen;
+package gui.QuizQuestion;
 
 /**
  * {@code QuizQuestionDelegate} defines the contract for delegating actions

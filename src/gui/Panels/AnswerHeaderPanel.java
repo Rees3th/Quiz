@@ -12,9 +12,9 @@ import javax.swing.JPanel;
  * <p>
  * It contains two labels:
  * <ul>
- * <li><b>"Mögliche Antwortwahl"</b> – indicating the possible answer
+ * <li><b>"Possible Answer"</b> – indicating the possible answer
  * options</li>
- * <li><b>"Richtig"</b> – indicating the column where the correct answer
+ * <li><b>"Correct"</b> – indicating the column where the correct answer
  * checkbox will appear</li>
  * </ul>
  * </p>
@@ -44,14 +44,14 @@ public class AnswerHeaderPanel extends JPanel {
 	 * Constructs an {@code AnswerHeaderPanel} with two column labels:
 	 * <ul>
 	 * <li>"Mögliche Antwortwahl"</li>
-	 * <li>"Richtig"</li>
+	 * <li>"Correct"</li>
 	 * </ul>
 	 */
 	public AnswerHeaderPanel() {
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
 		// Label for the answer text column
-		JLabel label = new JLabel("Mögliche Antwortwahl");
+		JLabel label = new JLabel("Possible Answer");
 		label.setPreferredSize(new Dimension(170, 16));
 		add(label);
 
@@ -59,7 +59,7 @@ public class AnswerHeaderPanel extends JPanel {
 		add(Box.createHorizontalGlue());
 
 		// Label for the correct-answer checkbox column
-		JLabel label2 = new JLabel("Richtig");
+		JLabel label2 = new JLabel("Correct");
 		label2.setPreferredSize(new Dimension(50, 16));
 		add(label2);
 	}

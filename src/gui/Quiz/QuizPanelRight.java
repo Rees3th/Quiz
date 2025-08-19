@@ -8,7 +8,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
-import gui.Panels.ThemaFragenPanel;
+import gui.Panels.QuizQuestionRightLayout;
 import persistence.DBDataManager;
 import quizLogic.Question;
 import quizLogic.Theme;
@@ -19,7 +19,7 @@ import quizLogic.Theme;
  *
  * <p>
  * This panel manages the **theme selection and question list**. It uses a
- * {@link ThemaFragenPanel} internally, which bundles:
+ * {@link QuizQuestionRightLayout} internally, which bundles:
  * </p>
  * <ul>
  * <li>A combo box for selecting a theme</li>
@@ -50,7 +50,7 @@ public class QuizPanelRight extends JPanel {
 	private static final long serialVersionUID = 1L;
 
 	/** Combined UI element for theme selection and question list. */
-	private ThemaFragenPanel themaFragenPanel;
+	private QuizQuestionRightLayout quizQuestionRightLayout;
 
 	/** Data manager for retrieving themes and questions from the database. */
 	private final DBDataManager dm;
@@ -64,7 +64,7 @@ public class QuizPanelRight extends JPanel {
 	 * ID of the currently shown (answered) question, or {@code null} if none is
 	 * marked.
 	 */
-	private Integer aktuellGezeigteFrageId = null;
+	private Integer actualQuestionId = null;
 
 	/**
 	 * Constructs a new {@code QuizPanelRight}.
@@ -75,7 +75,7 @@ public class QuizPanelRight extends JPanel {
 	 * <ol>
 	 * <li>Initialize the layout and padding</li>
 	 * <li>Load all available themes from {@link DBDataManager}</li>
-	 * <li>Create a {@link ThemaFragenPanel} with those themes</li>
+	 * <li>Create a {@link QuizQuestionRightLayout} with those themes</li>
 	 * <li>Register event listeners for theme and question selection</li>
 	 * <li>Select the first theme (default "All themes") and populate the question
 	 * list</li>
@@ -94,13 +94,13 @@ public class QuizPanelRight extends JPanel {
 		List<Theme> themenListe = new ArrayList<>(dm.getAllThemes());
 
 		// Build internal UI component
-		themaFragenPanel = new ThemaFragenPanel(dm, themenListe);
-		add(themaFragenPanel);
+		quizQuestionRightLayout = new QuizQuestionRightLayout(dm, themenListe);
+		add(quizQuestionRightLayout);
 
 		// Hide UI elements not needed in this gameplay context
-		themaFragenPanel.getThemaInfoButton().setVisible(false);
-		themaFragenPanel.getInfoTitelLbl().setVisible(false);
-		themaFragenPanel.getFragenLabel().setVisible(false);
+		quizQuestionRightLayout.getThemaInfoButton().setVisible(false);
+		quizQuestionRightLayout.getInfoTitelLbl().setVisible(false);
+		quizQuestionRightLayout.getQuestionLabel().setVisible(false);
 
 		add(Box.createVerticalStrut(15)); // spacing between UI elements
 
@@ -108,8 +108,8 @@ public class QuizPanelRight extends JPanel {
 		setupEvents();
 
 		// Start with first theme selected -> trigger population
-		themaFragenPanel.getThemaComboBox().setSelectedIndex(0);
-		updateFragenList(ThemaFragenPanel.ALLE_THEMEN);
+		quizQuestionRightLayout.getThemaComboBox().setSelectedIndex(0);
+		updateQuestionList(QuizQuestionRightLayout.ALL_THEMES);
 	}
 
 	/**
@@ -122,12 +122,12 @@ public class QuizPanelRight extends JPanel {
 	 */
 	private void setupEvents() {
 		// Theme combo box selection -> update list of questions
-		themaFragenPanel.getThemaComboBox().addActionListener(e -> {
-			Theme selected = (Theme) themaFragenPanel.getThemaComboBox().getSelectedItem();
+		quizQuestionRightLayout.getThemaComboBox().addActionListener(e -> {
+			Theme selected = (Theme) quizQuestionRightLayout.getThemaComboBox().getSelectedItem();
 			List<Question> fragen;
 			if (selected == null) {
 				fragen = new ArrayList<>();
-			} else if (selected == ThemaFragenPanel.ALLE_THEMEN) {
+			} else if (selected == QuizQuestionRightLayout.ALL_THEMES) {
 				// Collect questions from all themes
 				fragen = new ArrayList<>();
 				for (Theme t : dm.getAllThemes()) {
@@ -137,13 +137,13 @@ public class QuizPanelRight extends JPanel {
 				// Load questions for the selected theme only
 				fragen = dm.getQuestionsFor(selected);
 			}
-			themaFragenPanel.setFragen(fragen);
+			quizQuestionRightLayout.setQuestion(fragen);
 		});
 
 		// Question list selection -> update details on left panel
-		themaFragenPanel.getFragenList().addListSelectionListener(e -> {
+		quizQuestionRightLayout.getQuestionList().addListSelectionListener(e -> {
 			if (!e.getValueIsAdjusting()) {
-				Question selected = themaFragenPanel.getFragenList().getSelectedValue();
+				Question selected = quizQuestionRightLayout.getQuestionList().getSelectedValue();
 				if (selected != null) {
 					// Retrieve full version of question from DB (with answers loaded)
 					Question fullQ = dm.getFullQuestionById(selected.getId());
@@ -171,9 +171,10 @@ public class QuizPanelRight extends JPanel {
 	 *
 	 * @param selectedThema the {@link Theme} selected in the combo box
 	 */
-	private void updateFragenList(Theme selectedThema) {
-		@SuppressWarnings("unchecked")
-		DefaultListModel<Question> model = (DefaultListModel<Question>) themaFragenPanel.getFragenList().getModel();
+	private void updateQuestionList(Theme selectedThema) {
+
+		DefaultListModel<Question> model = (DefaultListModel<Question>) quizQuestionRightLayout.getQuestionList()
+				.getModel();
 		model.clear();
 
 		if (selectedThema != null && "Alle Themen".equals(selectedThema.toString())) {
@@ -197,20 +198,20 @@ public class QuizPanelRight extends JPanel {
 	 * Reloads all themes and questions from the database, and resets the theme
 	 * selection to "All themes".
 	 */
-	public void reloadAllThemenUndFragen() {
+	public void reloadAllThemesAndQuestions() {
 		List<Theme> themes = dm.getAllThemes();
-		themaFragenPanel.setThemen(themes);
+		quizQuestionRightLayout.setThemes(themes);
 
 		if (themes != null && !themes.isEmpty()) {
-			themaFragenPanel.getThemaComboBox().setSelectedIndex(0);
-			Theme first = (Theme) themaFragenPanel.getThemaComboBox().getSelectedItem();
+			quizQuestionRightLayout.getThemaComboBox().setSelectedIndex(0);
+			Theme first = (Theme) quizQuestionRightLayout.getThemaComboBox().getSelectedItem();
 
-			List<Question> fragen = (first == ThemaFragenPanel.ALLE_THEMEN) ? collectAllQuestions(themes)
+			List<Question> fragen = (first == QuizQuestionRightLayout.ALL_THEMES) ? collectAllQuestions(themes)
 					: dm.getQuestionsFor(first);
 
-			themaFragenPanel.setFragen(fragen);
+			quizQuestionRightLayout.setQuestion(fragen);
 		} else {
-			themaFragenPanel.setFragen(null);
+			quizQuestionRightLayout.setQuestion(null);
 		}
 	}
 
@@ -224,7 +225,7 @@ public class QuizPanelRight extends JPanel {
 		List<Question> all = new ArrayList<>();
 		if (themes != null) {
 			for (Theme t : themes) {
-				if (t != ThemaFragenPanel.ALLE_THEMEN) {
+				if (t != QuizQuestionRightLayout.ALL_THEMES) {
 					all.addAll(dm.getQuestionsFor(t));
 				}
 			}
@@ -243,13 +244,13 @@ public class QuizPanelRight extends JPanel {
 	}
 
 	/**
-	 * Provides access to the underlying {@link ThemaFragenPanel} instance for
-	 * advanced customization if needed.
+	 * Provides access to the underlying {@link QuizQuestionRightLayout} instance
+	 * for advanced customization if needed.
 	 *
-	 * @return the inner {@link ThemaFragenPanel}
+	 * @return the inner {@link QuizQuestionRightLayout}
 	 */
-	public ThemaFragenPanel getThemaFragenPanel() {
-		return themaFragenPanel;
+	public QuizQuestionRightLayout getQuizQuestionRightLayout() {
+		return quizQuestionRightLayout;
 	}
 
 	/**
@@ -259,15 +260,15 @@ public class QuizPanelRight extends JPanel {
 	 * @param questionId the ID of the answered question
 	 */
 	public void markAnswered(int questionId) {
-		aktuellGezeigteFrageId = questionId;
+		actualQuestionId = questionId;
 	}
 
 	/**
 	 * Resets the answered-state of all questions. Typically called when switching
 	 * to a new question.
 	 */
-	public void resetGezeigteAntworten() {
-		aktuellGezeigteFrageId = null;
+	public void resetActualQuestion() {
+		actualQuestionId = null;
 	}
 
 	/**
@@ -276,6 +277,6 @@ public class QuizPanelRight extends JPanel {
 	 * @param questions list of questions to display
 	 */
 	public void setQuestions(List<Question> questions) {
-		themaFragenPanel.setFragen(questions);
+		quizQuestionRightLayout.setQuestion(questions);
 	}
 }

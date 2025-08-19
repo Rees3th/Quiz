@@ -1,4 +1,4 @@
-package gui.QuizThemen;
+package gui.QuizThemes;
 
 /**
  * {@code QuizThemeDelegate} defines the contract for communication between

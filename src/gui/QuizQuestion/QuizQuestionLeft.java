@@ -1,7 +1,8 @@
-package gui.QuizFragen;
+package gui.QuizQuestion;
 
 import java.awt.Dimension;
 import java.util.List;
+
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -12,7 +13,7 @@ import javax.swing.JTextField;
 
 import gui.Panels.AnswerHeaderPanel;
 import gui.Panels.AnswerRowPanel;
-import gui.Panels.FragePanel;
+import gui.Panels.questionPanel;
 import gui.Panels.LabelFieldPanel;
 import persistence.DBDataManager;
 import quizLogic.Answer;
@@ -46,8 +47,8 @@ import quizLogic.Theme;
  *
  * <p>
  * UI layout is structured using {@link BoxLayout} with helper classes like
- * {@link LabelFieldPanel}, {@link FragePanel}, {@link AnswerHeaderPanel}, and
- * {@link AnswerRowPanel}.
+ * {@link LabelFieldPanel}, {@link questionPanel}, {@link AnswerHeaderPanel},
+ * and {@link AnswerRowPanel}.
  * </p>
  *
  * <p>
@@ -58,26 +59,27 @@ import quizLogic.Theme;
  * @author Oleg Kapirulya
  */
 public class QuizQuestionLeft extends JPanel {
+
 	/** Serial version UID for serialization compatibility. */
 	private static final long serialVersionUID = 1L;
 
+	/** Data manager for persistence and DB access. */
+	private final DBDataManager dm;
+
 	/** Text field showing the selected theme (read-only). */
-	private JTextField themaField;
+	private JTextField themeField;
 
 	/** Field for entering the question title. */
 	private JTextField titelField;
 
 	/** Text area for entering the main question text. */
-	private JTextArea frageArea;
+	private JTextArea questionArea;
 
 	/** Input fields for up to 4 possible answer texts. */
 	private JTextField[] answerFields = new JTextField[4];
 
 	/** Checkboxes for marking whether each corresponding answer is correct. */
 	private JCheckBox[] checkboxes = new JCheckBox[4];
-
-	/** Data manager for persistence and DB access. */
-	private final DBDataManager dm;
 
 	/**
 	 * Creates a new panel for entering and editing quiz questions.
@@ -90,8 +92,6 @@ public class QuizQuestionLeft extends JPanel {
 		initComponents();
 		layoutComponents();
 	}
-
-	// ------------------- Initialization -------------------
 
 	/**
 	 * Initializes base panel properties and layout strategy.
@@ -112,12 +112,11 @@ public class QuizQuestionLeft extends JPanel {
 	 * input) - Four answer rows (editable text + checkbox each)
 	 */
 	private void initComponents() {
-		themaField = new JTextField(27);
-		themaField.setEditable(false);
+		themeField = new JTextField(27);
+		themeField.setEditable(false);
 
 		titelField = new JTextField(27);
-
-		frageArea = new JTextArea(6, 24);
+		questionArea = new JTextArea(6, 24);
 
 		for (int i = 0; i < 4; i++) {
 			answerFields[i] = new JTextField(23);
@@ -136,25 +135,19 @@ public class QuizQuestionLeft extends JPanel {
 	 * </ol>
 	 */
 	private void layoutComponents() {
-		add(new LabelFieldPanel("Theme:", themaField));
+		add(new LabelFieldPanel("Theme:", themeField));
 		add(Box.createVerticalStrut(10));
-
 		add(new LabelFieldPanel("Title:", titelField));
 		add(Box.createVerticalStrut(10));
-
-		add(new FragePanel(frageArea));
+		add(new questionPanel(questionArea));
 		add(Box.createVerticalStrut(15));
-
 		add(new AnswerHeaderPanel());
 		add(Box.createVerticalStrut(8));
-
 		for (int i = 0; i < 4; i++) {
 			add(new AnswerRowPanel(i + 1, answerFields[i], checkboxes[i]));
 			add(Box.createVerticalStrut(8));
 		}
 	}
-
-	// ------------------- Public API -------------------
 
 	/**
 	 * Sets the theme displayed in the form.
@@ -166,7 +159,7 @@ public class QuizQuestionLeft extends JPanel {
 	 * @param t the selected {@link Theme}, or {@code null} to clear the theme field
 	 */
 	public void setThema(Theme t) {
-		themaField.setText(t != null ? t.getTitle() : "");
+		themeField.setText(t != null ? t.getTitle() : "");
 	}
 
 	/**
@@ -180,15 +173,13 @@ public class QuizQuestionLeft extends JPanel {
 	 * @param q the {@link Question} to load into the form, or {@code null} for
 	 *          reset
 	 */
-	public void setFrage(Question q) {
+	public void setQuestion(Question q) {
 		if (q == null) {
 			clearFields();
 			return;
 		}
-
 		titelField.setText(q.getTitle());
-		frageArea.setText(q.getText());
-
+		questionArea.setText(q.getText());
 		List<Answer> answers = q.getAnswers();
 		for (int i = 0; i < answerFields.length; i++) {
 			if (i < answers.size()) {
@@ -212,10 +203,8 @@ public class QuizQuestionLeft extends JPanel {
 	 */
 	public Question getSelectedQuestion(Theme selectedThema) {
 		Question q = new Question(selectedThema);
-
 		q.setTitle(titelField.getText());
-		q.setText(frageArea.getText());
-
+		q.setText(questionArea.getText());
 		for (int i = 0; i < answerFields.length; i++) {
 			String text = answerFields[i].getText().trim();
 			if (!text.isEmpty()) {
@@ -229,15 +218,13 @@ public class QuizQuestionLeft extends JPanel {
 		return q;
 	}
 
-	// ------------------- Private Helpers -------------------
-
 	/**
 	 * Clears all form fields (theme, title, text, and answers).
 	 */
 	private void clearFields() {
-		themaField.setText("");
+		themeField.setText("");
 		titelField.setText("");
-		frageArea.setText("");
+		questionArea.setText("");
 		for (int i = 0; i < answerFields.length; i++) {
 			answerFields[i].setText("");
 			checkboxes[i].setSelected(false);

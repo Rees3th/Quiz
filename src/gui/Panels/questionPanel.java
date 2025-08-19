@@ -29,7 +29,7 @@ import javax.swing.JTextArea;
  * 
  * @author Oleg Kapirulya
  */
-public class FragePanel extends JPanel {
+public class questionPanel extends JPanel {
 
 	/** Serial version UID for serialization compatibility. */
 	private static final long serialVersionUID = 1L;
@@ -40,13 +40,13 @@ public class FragePanel extends JPanel {
 	 * @param textArea the {@link JTextArea} used to display or edit the question
 	 *                 text
 	 */
-	public FragePanel(JTextArea textArea) {
+	public questionPanel(JTextArea textArea) {
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
 		// Label for the question
-		JLabel frageLabel = new JLabel("Frage:");
-		frageLabel.setPreferredSize(new Dimension(80, 16));
-		add(frageLabel);
+		JLabel questionLabel = new JLabel("Frage:");
+		questionLabel.setPreferredSize(new Dimension(80, 16));
+		add(questionLabel);
 
 		// Scroll pane containing the text area
 		JScrollPane scroll = new JScrollPane(textArea);
