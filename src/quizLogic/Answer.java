@@ -1,6 +1,6 @@
 package quizLogic;
 
-import persistence.DataAccessObject;
+import persistence.serialization.DataAccessObject;
 
 /**
  * {@code Answer} represents a single possible answer to a {@link Question}.

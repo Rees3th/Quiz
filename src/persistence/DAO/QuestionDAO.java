@@ -20,9 +20,11 @@ import quizLogic.Theme;
  * </ul>
  *
  * <p>
- * Implementations (such as {@code MariaDBQuestionDAO}) define how these
+ * Implementations (such as {@code DBQuestionDAO}) define how these
  * operations are executed against a specific database.
  * </p>
+ * 
+ * @author Oleg Kapirulya
  */
 public interface QuestionDAO {
 

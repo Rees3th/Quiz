@@ -19,9 +19,11 @@ import quizLogic.Question;
  * </ul>
  *
  * <p>
- * Implementations (e.g. {@link persistence.MariaDB.MariaDBAnswerDAO}) provide
- * the actual persistence logic against a specific database.
+ * Implementations (e.g. {@link persistence.DataBase.DBAnswerDAO}) provide the
+ * actual persistence logic against a specific database.
  * </p>
+ * 
+ * @author Oleg Kapirulya
  */
 public interface AnswerDAO {
 

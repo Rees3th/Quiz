@@ -28,7 +28,8 @@ import gui.Panels.MessagePanel;
  * </p>
  * 
  * <p>
- * The buttons are grouped inside a reusable {@link ButtonPanel}.
+ * The buttons are grouped inside a reusable {@link ButtonPanel}, and feedback
+ * messages are displayed through an embedded {@link MessagePanel}.
  * </p>
  * 
  * @author Oleg Kapirulya
@@ -46,18 +47,18 @@ public class QuizPanelBottom extends JPanel {
 
 	/** Button for loading a new question. */
 	private JButton newQuestionButton;
-	
+
 	private MessagePanel messagePanel;
 
 	/** Delegate responsible for handling the actions triggered by this panel. */
 	private QuizDelegate delegate;
 
 	/**
-	 * Creates a {@code QuizPanelBottom} with action buttons for gameplay.
+	 * Creates a {@code QuizPanelBottom} with action buttons and message area.
 	 * <p>
 	 * The panel layout is a {@link BorderLayout}, with the three buttons grouped in
-	 * a {@link ButtonPanel} in the center. Button clicks are forwarded to the
-	 * corresponding methods on the {@link QuizDelegate} (if set).
+	 * a {@link ButtonPanel} in the center and messages show above. Button clicks
+	 * are forwarded to the corresponding methods on the {@link QuizDelegate}.
 	 * </p>
 	 *
 	 * <ul>
@@ -76,7 +77,7 @@ public class QuizPanelBottom extends JPanel {
 		// Group all buttons inside a reusable container
 		ButtonPanel bp = new ButtonPanel(answerButton, saveButton, newQuestionButton);
 		add(bp, BorderLayout.CENTER);
-		
+
 		messagePanel = new MessagePanel();
 		add(messagePanel, BorderLayout.NORTH);
 
@@ -146,7 +147,7 @@ public class QuizPanelBottom extends JPanel {
 	public void setDelegate(QuizDelegate delegate) {
 		this.delegate = delegate;
 	}
-	
+
 	/**
 	 * Returns the {@link MessagePanel} used to display feedback or error messages.
 	 *

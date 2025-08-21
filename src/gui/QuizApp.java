@@ -17,17 +17,23 @@ import persistence.DBDataManager;
  *
  * <p>
  * This class sets up the main application window (a {@link JFrame}) and
- * organizes the three main functional areas into a tabbed interface:
+ * organizes the application into a tabbed interface consisting of core
+ * functional areas:
  * </p>
  * <ul>
- * <li>{@link QuizThemePanel} – management of quiz topics (themes)</li>
- * <li>{@link QuizQuestionPanel} – management of quiz questions</li>
- * <li>{@link QuizPanel} – running the quiz gameplay</li>
+ * <li>{@link QuizThemePanel} – management of quiz themes/topics</li>
+ * <li>{@link QuizQuestionPanel} – create, update, and delete quiz
+ * questions</li>
+ * <li>{@link QuizPanel} – gameplay for taking quizzes</li>
  * </ul>
  *
  * <p>
- * A generic tab ("Statistics") is also included as placeholder for future
- * features.
+ * Additionally, a "Statistics" tab hosts future extensions for data analytics.
+ * </p>
+ *
+ * <p>
+ * The {@link DBDataManager} is instantiated here and shared among all panels to
+ * provide centralized data access and persistence.
  * </p>
  *
  * <p>
@@ -35,97 +41,79 @@ import persistence.DBDataManager;
  * </p>
  * 
  * <pre>{@code
- * public static void main(String[] args) {
+ * public static void main(String[] args) throws SQLException {
  * 	new QuizApp();
  * }
  * }</pre>
  *
  * <p>
- * This class primarily handles UI orchestration. Data loading and persistence
- * are delegated to {@link DBDataManager} and the respective panels.
+ * Responsibilities are primarily UI composition and wiring, delegating business
+ * logic and data handling to underlying panels and the data manager.
  * </p>
  *
  * @author Oleg Kapirulya
  */
 public class QuizApp extends JFrame {
-	/** Serialization ID for this JFrame class. */
+
 	private static final long serialVersionUID = 1L;
 
-	/** X position of the window on the screen. */
+	/** Initial X position of the application window on screen */
 	private static final int FRAME_X = 600;
-	/** Y position of the window on the screen. */
+	/** Initial Y position of the application window on screen */
 	private static final int FRAME_Y = 240;
-	/** Width of the application window. */
+	/** Width of the application window */
 	private static final int FRAME_WIDTH = 800;
-	/** Height of the application window. */
+	/** Height of the application window */
 	private static final int FRAME_HEIGHT = 600;
 
 	/**
-	 * Constructs and initializes the main quiz application window.
-	 *
-	 * <p>
-	 * Main responsibilities:
-	 * </p>
-	 * <ol>
-	 * <li>Configure JFrame properties</li>
-	 * <li>Create and initialize the main panels with a shared
-	 * {@link DBDataManager}</li>
-	 * <li>Wire dependent panels where necessary (Theme ↔ Question)</li>
-	 * <li>Add all components into a {@link TabPanel}</li>
-	 * <li>Show the application window</li>
-	 * </ol>
-	 *
-	 * @throws HeadlessException if no display, keyboard, or mouse is available
-	 * @throws SQLException      if database initialization fails
+	 * Constructs and initializes the main application window and its primary
+	 * functional panels.
+	 * 
+	 * @throws HeadlessException if the system does not support a display, keyboard,
+	 *                           or mouse
+	 * @throws SQLException      if initialization of the database connection fails
 	 */
 	public QuizApp() throws HeadlessException, SQLException {
-		// ---------------- Data Manager ----------------
+		// Create the central data access manager
 		DBDataManager dm = new DBDataManager();
 
-		// ---------------- Frame setup ----------------
+		// Configure JFrame properties
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setBounds(FRAME_X, FRAME_Y, FRAME_WIDTH, FRAME_HEIGHT);
 		setTitle("Quiz App");
 		setResizable(false);
 
-		// ---------------- Create Panels ----------------
-		// Panel to manage quiz topics (themes)
-		QuizThemePanel quizThemenPanel = new QuizThemePanel(dm);
-
-		// Panel to manage quiz questions (CRUD operations)
+		// Instantiate core UI panels, all sharing the same DBDataManager instance
+		QuizThemePanel quizThemePanel = new QuizThemePanel(dm);
 		QuizQuestionPanel quizQuestionPanel = new QuizQuestionPanel(dm);
+		quizThemePanel.setQuizQuestionPanel(quizQuestionPanel); // link theme and questions panels for syncing
 
-		// Connect themes panel with questions panel so updates are synced
-		quizThemenPanel.setQuizQuestionPanel(quizQuestionPanel);
+		QuizPanel quizPanel = new QuizPanel(dm); // quiz gameplay panel
+		StatisticsContainerPanel statisticsContainer = new StatisticsContainerPanel(dm); // stats panel
 
-		// Panel to run the actual quiz gameplay
-		QuizPanel quizPanel = new QuizPanel(dm);
+		// Create tab container and add all panels as tabs
+		TabPanel tabPanel = new TabPanel(quizThemePanel, quizQuestionPanel, quizPanel, statisticsContainer);
 
-		StatisticsContainerPanel statsContainer = new StatisticsContainerPanel(dm);
-		// ---------------- Create Tab Panel ----------------
-		TabPanel tabPanel = new TabPanel(quizThemenPanel, quizQuestionPanel, quizPanel, statsContainer);
+		tabPanel.addTab("Add Theme", quizThemePanel);
+		tabPanel.addTab("Add Question", quizQuestionPanel);
+		tabPanel.addTab("Quiz", quizPanel);
+		tabPanel.addTab("Statistics", statisticsContainer);
 
-		// Add tabs with user-facing names
-		tabPanel.addTab("Add Theme", quizThemenPanel); // Manage quiz topics
-		tabPanel.addTab("Add Question", quizQuestionPanel); // Manage quiz questions
-		tabPanel.addTab("Quiz", quizPanel); // Play the quiz
-		tabPanel.addTab("Statistics", statsContainer);
-
-		// ---------------- Add TabPanel to Frame ----------------
 		add(tabPanel);
 
-		// ---------------- Show Frame ----------------
+		// Display the window
 		setVisible(true);
 	}
 
 	/**
-	 * Application entry point.
-	 *
-	 * @param args not used
-	 * @throws SQLException      if the database cannot be initialized
-	 * @throws HeadlessException if no display environment exists
+	 * Main method serving as application entry point.
+	 * 
+	 * @param args command-line arguments (not used)
+	 * @throws SQLException      if database initialization fails
+	 * @throws HeadlessException if the environment lacks display or input devices
 	 */
-	public static void main(String[] args) throws HeadlessException, SQLException {
+	public static void main(String[] args) throws SQLException, HeadlessException {
 		new QuizApp();
 	}
 }

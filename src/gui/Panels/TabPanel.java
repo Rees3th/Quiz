@@ -11,69 +11,91 @@ import gui.QuizThemes.QuizThemePanel;
 import gui.Statistic.StatisticsContainerPanel;
 
 /**
- * {@code TabPanel} is a customized {@link JTabbedPane} that contains the main
- * sections (tabs) of the quiz application.
+ * {@code TabPanel} is a customized {@link JTabbedPane} serving as the main
+ * navigation container of the quiz application.
+ *
  * <p>
- * It holds:
- * <ul>
- * <li>The {@link QuizThemePanel} for managing quiz themes</li>
- * <li>The {@link QuizQuestionPanel} for managing quiz questions</li>
- * <li>The {@link QuizPanel} for playing the quiz</li>
- * <li>Additional panels such as a statistics tab</li>
- * </ul>
- * 
- * <p>
- * The panel listens for tab change events and triggers data reloads in certain
- * tabs to ensure their content is up to date:
- * <ul>
- * <li>When switching to the "Quiz Questions" tab, it reloads the list of
- * themes.</li>
- * <li>When switching to the "Quiz" tab, it reloads all themes and
- * questions.</li>
- * </ul>
+ * This tabbed pane organizes the primary sections of the application into
+ * separate tabs:
  * </p>
- * 
+ * <ul>
+ * <li>{@link QuizThemePanel} — managing quiz themes</li>
+ * <li>{@link QuizQuestionPanel} — managing quiz questions</li>
+ * <li>{@link QuizPanel} — playing quiz games</li>
+ * <li>{@link StatisticsContainerPanel} — viewing quiz statistics and
+ * analysis</li>
+ * </ul>
+ *
+ * <p>
+ * It enhances the standard tabbed interface by listening to tab selection
+ * changes and triggering appropriate data refreshes to ensure the UI reflects
+ * current information:
+ * </p>
+ * <ul>
+ * <li>When the "Quiz Questions" tab is selected, the associated panel reloads
+ * available themes.</li>
+ * <li>When the "Quiz" tab is selected, the quiz panel refreshes all quiz
+ * questions and themes.</li>
+ * <li>When the "Statistics" tab is selected, the statistics panel triggers a
+ * data refresh.</li>
+ * </ul>
+ *
+ * <p>
+ * By centralizing refresh logic within this container, the application
+ * maintains UI consistency and data up-to-dateness seamlessly during user
+ * navigation.
+ * </p>
+ *
  * @author Oleg Kapirulya
  */
 public class TabPanel extends JTabbedPane {
 
-	/** Serial version UID for serialization compatibility. */
+	/** Serialization version unique identifier. */
 	private static final long serialVersionUID = 1L;
 
-	/** Background color for the tab bar. */
+	/** Background color used for the tab bar area. */
 	public static final Color BG_COLOR = Color.WHITE;
 
-	/** Font for the tab titles. */
+	/** Font used for tab titles for consistent application styling. */
 	private static final Font FONT_TAB = new Font("Helvetica", Font.ITALIC, 16);
 
 	/**
-	 * Constructs a new {@code TabPanel} and sets up tab change handling.
-	 * <p>
-	 * When the tab selection changes, the relevant panel is refreshed.
-	 * </p>
+	 * Constructs a new TabPanel with the provided functional panels as tabs.
 	 *
-	 * @param quizThemenPanel the {@link QuizThemePanel} used in the "Quiz Themes"
-	 *                        tab
-	 * @param quizQuestionPanel the {@link QuizQuestionPanel} used in the "Quiz
-	 *                        Questions" tab
-	 * @param quizPanel       the {@link QuizPanel} used in the "Quiz" tab
+	 * @param quizThemePanel    the panel managing quiz themes, displayed under the
+	 *                          "Quiz Themes" tab
+	 * @param quizQuestionPanel the panel managing quiz questions, displayed under
+	 *                          the "Quiz Questions" tab
+	 * @param quizPanel         the panel handling the quiz gameplay, displayed
+	 *                          under the "Quiz" tab
+	 * @param statisticsPanel   the container panel presenting quiz statistics,
+	 *                          under the "Statistics" tab
 	 */
-	public TabPanel(QuizThemePanel quizThemenPanel, QuizQuestionPanel quizQuestionPanel, QuizPanel quizPanel, StatisticsContainerPanel statisticsContainerPanel) {
-
+	public TabPanel(QuizThemePanel quizThemePanel, QuizQuestionPanel quizQuestionPanel, QuizPanel quizPanel,
+			StatisticsContainerPanel statisticsPanel) {
 		super(JTabbedPane.TOP);
 
 		setFont(FONT_TAB);
 		setBackground(BG_COLOR);
 
-		// Listen for tab changes and refresh data where necessary
+		addTab("Quiz Themes", quizThemePanel);
+		addTab("Quiz Questions", quizQuestionPanel);
+		addTab("Quiz", quizPanel);
+		addTab("Statistics", statisticsPanel);
+
+		// Listen to tab selection changes and refresh data accordingly
 		addChangeListener(e -> {
-			int tab = getSelectedIndex();
-			if (tab == 1) { // "Quiz Questions" tab
+			int selectedIndex = getSelectedIndex();
+			switch (selectedIndex) {
+			case 1: // Quiz Questions tab
 				quizQuestionPanel.reloadThemes();
-			} else if (tab == 2) { // "Quiz" tab
+				break;
+			case 2: // Quiz tab
 				quizPanel.getQuizPanelRight().reloadAllThemesAndQuestions();
-			} else if (tab == 3) { // "Statistic" tab
-				statisticsContainerPanel.refresh();
+				break;
+			case 3: // Statistics tab
+				statisticsPanel.refresh();
+				break;
 			}
 		});
 	}

@@ -1,4 +1,4 @@
-package persistence.MariaDB;
+package persistence.DataBase;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -11,8 +11,7 @@ import persistence.DAO.ThemeDAO;
 import quizLogic.Theme;
 
 /**
- * {@code MariaDBThemeDAO} is the MariaDB/MySQL implementation of
- * {@link ThemeDAO}.
+ * {@code MariaDBThemeDAO} is the DB/MySQL implementation of {@link ThemeDAO}.
  *
  * <p>
  * Responsibilities:
@@ -29,8 +28,10 @@ import quizLogic.Theme;
  * This DAO manages only the <b>theme table</b>. Questions and answers must be
  * handled via their respective DAOs.
  * </p>
+ * 
+ * @author Oleg Kapirulya
  */
-public class MariaDBThemeDAO implements ThemeDAO {
+public class DBThemeDAO implements ThemeDAO {
 
 	/** Active DB connection provided by {@link persistence.DBDataManager}. */
 	private final Connection conn;
@@ -40,7 +41,7 @@ public class MariaDBThemeDAO implements ThemeDAO {
 	 *
 	 * @param conn an open JDBC {@link Connection}
 	 */
-	public MariaDBThemeDAO(Connection conn) {
+	public DBThemeDAO(Connection conn) {
 		this.conn = conn;
 	}
 

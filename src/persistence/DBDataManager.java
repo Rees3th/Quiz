@@ -11,301 +11,295 @@ import persistence.DAO.AnswerDAO;
 import persistence.DAO.QuestionDAO;
 import persistence.DAO.StatisticDAO;
 import persistence.DAO.ThemeDAO;
-import persistence.MariaDB.MariaDBAnswerDAO;
-import persistence.MariaDB.MariaDBQuestionDAO;
-import persistence.MariaDB.MariaDBStatisticDAO;
-import persistence.MariaDB.MariaDBThemeDAO;
+import persistence.DataBase.DBAnswerDAO;
+import persistence.DataBase.DBQuestionDAO;
+import persistence.DataBase.DBStatisticDAO;
+import persistence.DataBase.DBThemeDAO;
 import quizLogic.Answer;
 import quizLogic.Question;
 import quizLogic.QuizStatistic;
 import quizLogic.Theme;
 
 /**
- * {@code DBDataManager} is the central persistence manager for the Quiz
- * application.
+ * {@code DBDataManager} is the central persistence manager managing database 
+ * interactions related to quiz data in the application.
  *
  * <p>
- * <b>Responsibilities:</b>
+ * This class establishes and holds a JDBC connection to a MariaDB (MySQL) database,
+ * sets up tables if necessary, and exposes methods to perform CRUD operations on
+ * main quiz entities: themes, questions, answers, and statistics.
  * </p>
- * <ul>
- * <li>Establishes a database connection (here: MariaDB/MySQL)</li>
- * <li>Creates required tables (themes, questions, answers) if they don't
- * exist</li>
- * <li>Provides CRUD operations (Create/Read/Update/Delete) for {@link Theme},
- * {@link Question}, and {@link Answer}</li>
- * <li>Keeps data objects consistent by loading/saving associated answers for
- * questions</li>
- * </ul>
  *
  * <p>
- * Concrete SQL access is delegated to DAOs:
+ * Concrete database operations are delegated to individual DAO instances:
  * <ul>
- * <li>{@link ThemeDAO} – implemented by {@link MariaDBThemeDAO}</li>
- * <li>{@link QuestionDAO} – implemented by {@link MariaDBQuestionDAO}</li>
- * <li>{@link AnswerDAO} – implemented by {@link MariaDBAnswerDAO}</li>
+ *  <li>{@link ThemeDAO} for Theme objects.</li>
+ *  <li>{@link QuestionDAO} for Question objects.</li>
+ *  <li>{@link AnswerDAO} for Answer objects.</li>
+ *  <li>{@link StatisticDAO} for Quiz statistics.</li>
  * </ul>
  * </p>
  *
  * <p>
- * This class serves as the <b>single entry point</b> for higher-level
- * components (UI panels, business logic) that need to access persistence. Thus,
- * UI layers only deal with {@code DBDataManager}, not individual DAO classes.
+ * This class acts as a centralized service, providing a simplified API for 
+ * upper layers (UI, logic) to interact with persistent data without managing direct SQL code.
  * </p>
+ *
+ * <p><b>Responsibilities include:</b></p>
+ * <ul>
+ *   <li>Initialize database connection.</li>
+ *   <li>Ensure required tables exist.</li>
+ *   <li>Load, save and delete quiz themes.</li>
+ *   <li>Load, save and delete quiz questions, with answers fully synchronized.</li>
+ *   <li>Retrieve quiz answers, statistics, and support deletion cascading.</li>
+ * </ul>
+ *
+ * @author
  */
 public class DBDataManager {
 
-	/** The database connection (kept open for the lifetime of the app). */
-	private final Connection conn;
+    /** The persistent database connection used throughout the application. */
+    private final Connection conn;
 
-	/** DAO for managing Themes. */
-	private final ThemeDAO themeDAO;
+    /** DAO handling theme-related database operations. */
+    private final ThemeDAO themeDAO;
 
-	/** DAO for managing Questions. */
-	private final QuestionDAO questionDAO;
+    /** DAO handling question-related database operations. */
+    private final QuestionDAO questionDAO;
 
-	/** DAO for managing Answers. */
-	private final AnswerDAO answerDAO;
-	
-	/** DAO for managing Quiz Statistics. */
-	private final StatisticDAO statisticDAO;
+    /** DAO handling answer-related database operations. */
+    private final AnswerDAO answerDAO;
 
-	/**
-	 * Constructs a new {@code DBDataManager}.
-	 *
-	 * <p>
-	 * Initializes the JDBC connection with a MariaDB/MySQL instance, creates
-	 * required tables, and initializes DAO implementations.
-	 * </p>
-	 *
-	 * @throws SQLException if the connection or table creation fails
-	 */
-	public DBDataManager() throws SQLException {
-		conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/quizdb", "root", "");
+    /** DAO handling statistics-related database operations. */
+    private final StatisticDAO statisticDAO;
 
-		createTables();
+    /**
+     * Constructs the data manager, sets up the database connection,
+     * initializes DAOs, and creates necessary tables if missing.
+     *
+     * @throws SQLException if database setup or connection fails.
+     */
+    public DBDataManager() throws SQLException {
+        conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/quizdb", "root", "");
 
-		// Initialize DAO wrappers
-		themeDAO = new MariaDBThemeDAO(conn);
-		questionDAO = new MariaDBQuestionDAO(conn);
-		answerDAO = new MariaDBAnswerDAO(conn);
-		statisticDAO = new MariaDBStatisticDAO(conn);
-	}
+        createTables();
 
-	// ------------------- Initialization -------------------
+        themeDAO = new DBThemeDAO(conn);
+        questionDAO = new DBQuestionDAO(conn);
+        answerDAO = new DBAnswerDAO(conn);
+        statisticDAO = new DBStatisticDAO(conn);
+    }
 
-	/**
-	 * Creates the required database tables if they do not already exist.
-	 *
-	 * <ul>
-	 * <li><b>theme</b> – stores quiz themes (id, title, text)</li>
-	 * <li><b>question</b> – stores quiz questions, linked to a theme</li>
-	 * <li><b>answer</b> – stores possible answers, linked to a question</li>
-	 * </ul>
-	 *
-	 * <p>
-	 * Note: Uses <code>ON DELETE CASCADE</code> to remove dependent rows
-	 * automatically.
-	 * </p>
-	 */
-	private void createTables() throws SQLException {
-		try (Statement st = conn.createStatement()) {
-			st.executeUpdate("CREATE TABLE IF NOT EXISTS theme (" + "id INT PRIMARY KEY AUTO_INCREMENT,"
-					+ "title VARCHAR(255) NOT NULL," + "text TEXT)");
+    /**
+     * Creates database tables (theme, question, answer) if they don’t exist already.
+     * Uses foreign keys with cascading deletes to maintain referential integrity.
+     * 
+     * @throws SQLException if table creation fails.
+     */
+    private void createTables() throws SQLException {
+        try (Statement st = conn.createStatement()) {
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS theme (" +
+                    "id INT PRIMARY KEY AUTO_INCREMENT," +
+                    "title VARCHAR(255) NOT NULL," +
+                    "text TEXT)");
 
-			st.executeUpdate("CREATE TABLE IF NOT EXISTS question (" + "id INT PRIMARY KEY AUTO_INCREMENT,"
-					+ "theme_id INT," + "title VARCHAR(255) NOT NULL," + "text TEXT,"
-					+ "FOREIGN KEY (theme_id) REFERENCES theme(id) ON DELETE CASCADE)");
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS question (" +
+                    "id INT PRIMARY KEY AUTO_INCREMENT," +
+                    "theme_id INT," +
+                    "title VARCHAR(255) NOT NULL," +
+                    "text TEXT," +
+                    "FOREIGN KEY (theme_id) REFERENCES theme(id) ON DELETE CASCADE)");
 
-			st.executeUpdate("CREATE TABLE IF NOT EXISTS answer (" + "id INT PRIMARY KEY AUTO_INCREMENT,"
-					+ "question_id INT," + "text VARCHAR(255) NOT NULL," + "is_correct BOOLEAN,"
-					+ "FOREIGN KEY (question_id) REFERENCES question(id) ON DELETE CASCADE)");
-		}
-	}
+            st.executeUpdate("CREATE TABLE IF NOT EXISTS answer (" +
+                    "id INT PRIMARY KEY AUTO_INCREMENT," +
+                    "question_id INT," +
+                    "text VARCHAR(255) NOT NULL," +
+                    "is_correct BOOLEAN," +
+                    "FOREIGN KEY (question_id) REFERENCES question(id) ON DELETE CASCADE)");
+        }
+    }
 
-	// ------------------- Theme Operations -------------------
+    /**
+     * Fetches all themes from the database.
+     *
+     * @return List of all {@link Theme} objects.
+     */
+    public List<Theme> getAllThemes() {
+        return themeDAO.findAll();
+    }
 
-	/**
-	 * Retrieves all themes stored in the database.
-	 *
-	 * @return a list of {@link Theme} objects
-	 */
-	public List<Theme> getAllThemes() {
-		return themeDAO.findAll();
-	}
+    /**
+     * Persists a theme to the database. Inserts new or updates existing based on the id.
+     * 
+     * @param theme The {@link Theme} object to save.
+     * @return Null if success, or an error message string.
+     */
+    public String saveTheme(Theme theme) {
+        if (theme.getId() <= 0) {
+            return themeDAO.insert(theme) ? null : "Error inserting theme.";
+        } else {
+            return themeDAO.update(theme) ? null : "Error updating theme.";
+        }
+    }
 
-	/**
-	 * Persists a {@link Theme} into the database.
-	 * <ul>
-	 * <li>If {@code id <= 0} → inserts new theme</li>
-	 * <li>If {@code id > 0} → updates existing theme</li>
-	 * </ul>
-	 *
-	 * @param theme the theme to save
-	 * @return {@code null} on success, or an error message string on failure
-	 */
-	public String saveTheme(Theme theme) {
-		if (theme.getId() <= 0) {
-			return themeDAO.insert(theme) ? null : "Fehler beim Einfügen des Themas";
-		} else {
-			return themeDAO.update(theme) ? null : "Fehler beim Aktualisieren des Themas";
-		}
-	}
+    /**
+     * Deletes a theme by its ID.
+     * 
+     * @param themeId The id of the theme to delete.
+     * @return true if deletion was successful, false otherwise.
+     */
+    public boolean deleteTheme(int themeId) {
+        return themeDAO.delete(themeId);
+    }
 
-	/**
-	 * Deletes a theme by ID.
-	 *
-	 * @param themeId the ID of the theme to delete
-	 * @return {@code true} if deletion succeeded, otherwise {@code false}
-	 */
-	public boolean deleteTheme(int themeId) {
-		return themeDAO.delete(themeId);
-	}
+    /**
+     * Retrieves all questions for a given theme, with answers loaded.
+     * 
+     * @param theme The {@link Theme} whose questions to retrieve.
+     * @return List of {@link Question} objects including their answers.
+     */
+    public List<Question> getQuestionsFor(Theme theme) {
+        if (theme == null || theme.getId() <= 0)
+            return new ArrayList<>();
 
-	// ------------------- Question Operations -------------------
+        List<Question> questions = questionDAO.findByTheme(theme);
+        for (Question question : questions) {
+            List<Answer> answers = answerDAO.findByQuestion(question);
+            question.clearAnswers();
+            for (Answer answer : answers) {
+                question.addAnswer(answer);
+            }
+        }
+        return questions;
+    }
 
-	/**
-	 * Retrieves all questions for a given theme, including their answers.
-	 *
-	 * <p>
-	 * If theme is {@code null} or invalid, returns an empty list.
-	 * </p>
-	 *
-	 * @param theme the {@link Theme} whose questions to load
-	 * @return list of {@link Question} objects with their {@link Answer}s populated
-	 */
-	public List<Question> getQuestionsFor(Theme theme) {
-		if (theme == null || theme.getId() <= 0) {
-			return new ArrayList<>();
-		}
+    /**
+     * Retrieves a question by ID with its answers.
+     * 
+     * @param id The question ID.
+     * @return fully loaded {@link Question}, or null if not found.
+     */
+    public Question getFullQuestionById(int id) {
+        Question question = questionDAO.findById(id);
+        if (question != null) {
+            List<Answer> answers = answerDAO.findByQuestion(question);
+            question.clearAnswers();
+            for (Answer answer : answers) {
+                question.addAnswer(answer);
+            }
+            if (question.getThema() != null && question.getThema().getId() > 0) {
+                Theme theme = themeDAO.findById(question.getThema().getId());
+                question.setThema(theme);
+            }
+        }
+        return question;
+    }
 
-		List<Question> questions = questionDAO.findByTheme(theme);
+    /**
+     * Saves a question and its answers to the database.
+     * Inserts or updates the question based on its id.
+     * Answers are fully re-synced (old answers deleted, new answers inserted).
+     * 
+     * @param question The question to save.
+     * @return Null if successful, or an error message.
+     */
+    public String saveQuestion(Question question) {
+        if (question.getThema() == null || question.getThema().getId() <= 0)
+            return "Please select a valid theme before saving the question.";
 
-		for (Question q : questions) {
-			List<Answer> answers = answerDAO.findByQuestion(q);
+        boolean success;
+        if (question.getId() <= 0)
+            success = questionDAO.insert(question);
+        else
+            success = questionDAO.update(question);
 
-			// Ensure no stale state: clear answers before adding fresh ones
-			q.clearAnswers();
+        if (!success)
+            return (question.getId() <= 0) ? "Error inserting question." : "Error updating question.";
 
-			for (Answer a : answers) {
-				q.addAnswer(a);
-			}
-		}
-		return questions;
-	}
+        saveAnswers(question);
+        return null;
+    }
 
-	/**
-	 * Retrieves a full {@link Question} by its ID, including all answers.
-	 *
-	 * @param id the question ID
-	 * @return the full question with answers, or {@code null} if not found
-	 */
-	public Question getFullQuestionById(int id) {
-		Question q = questionDAO.findById(id);
-		if (q != null) {
-			List<Answer> answers = answerDAO.findByQuestion(q);
+    /**
+     * Deletes a question by its object reference.
+     * 
+     * @param question The question to delete.
+     * @return Null if successful, else error message.
+     */
+    public String deleteQuestion(Question question) {
+        return questionDAO.delete(question.getId()) ? null : "Error deleting question.";
+    }
 
-			q.clearAnswers();
-			for (Answer a : answers) {
-				q.addAnswer(a);
-			}
-			if (q.getThema() != null && q.getThema().getId() > 0) {
-	            Theme fullTheme = themeDAO.findById(q.getThema().getId());
-	            q.setThema(fullTheme);
-	        }
-		}
-		return q;
-	}
+    /**
+     * Persists answers for a question.
+     * Deletes all existing answers and inserts current ones.
+     * 
+     * @param question The question whose answers to save.
+     */
+    private void saveAnswers(Question question) {
+        // Delete old answers
+        answerDAO.deleteByQuestionId(question.getId());
 
-	/**
-	 * Saves a question (insert or update) and its associated answers.
-	 *
-	 * <ul>
-	 * <li>If the {@link Theme} is invalid, returns an error message</li>
-	 * <li>If question id is {@code <= 0}, a new record is inserted</li>
-	 * <li>If id is {@code > 0}, the record is updated</li>
-	 * <li>Answers are always overwritten: old ones removed, current ones
-	 * re-inserted</li>
-	 * </ul>
-	 *
-	 * @param question the {@link Question} to save
-	 * @return {@code null} if save succeeded, otherwise an error message
-	 */
-	public String saveQuestion(Question question) {
-		if (question.getThema() == null || question.getThema().getId() <= 0) {
-			return "Bitte wählen Sie ein gültiges Thema vor dem Speichern der Frage.";
-		}
+        // Insert new answers
+        for (Answer answer : question.getAnswers()) {
+            answer.setQuestion(question);
+            answerDAO.insert(answer);
+        }
+    }
 
-		boolean success;
-		if (question.getId() <= 0) {
-			success = questionDAO.insert(question);
-		} else {
-			success = questionDAO.update(question);
-		}
+    /**
+     * Returns all themes.
+     * 
+     * @return List of {@link Theme}.
+     */
+    public List<Theme> findAllThemes() {
+        return themeDAO.findAll();
+    }
 
-		if (success) {
-			saveAnswers(question);
-			return null;
-		} else {
-			return question.getId() <= 0 ? "Fehler beim Einfügen der Frage" : "Fehler beim Aktualisieren der Frage";
-		}
-	}
+    /**
+     * Finds questions for given theme.
+     * 
+     * @param theme The theme to query.
+     * @return List of {@link Question}.
+     */
+    public List<Question> findQuestionsByTheme(Theme theme) {
+        return questionDAO.findByTheme(theme);
+    }
 
-	/**
-	 * Deletes a question from the database.
-	 *
-	 * @param question the question to delete
-	 * @return {@code null} on success, or an error message if deletion failed
-	 */
-	public String deleteQuestion(Question question) {
-		return questionDAO.delete(question.getId()) ? null : "Fehler beim Löschen der Frage";
-	}
+    /**
+     * Finds quiz statistics for the given question ID.
+     * 
+     * @param questionId Id of the question.
+     * @return List of {@link QuizStatistic}.
+     */
+    public List<QuizStatistic> findStatisticsByQuestionId(int questionId) {
+        return statisticDAO.findByQuestionId(questionId);
+    }
 
-	// ------------------- Answer Handling -------------------
+    /**
+     * Accessor for ThemeDAO.
+     * 
+     * @return {@link ThemeDAO}.
+     */
+    public ThemeDAO getThemeDAO() {
+        return themeDAO;
+    }
 
-	/**
-	 * Saves all answers belonging to a question. Workflow:
-	 * <ol>
-	 * <li>Delete all old answers linked to the question</li>
-	 * <li>Insert fresh answers from the given {@link Question} object</li>
-	 * </ol>
-	 *
-	 * @param question the question whose answers to persist
-	 */
-	private void saveAnswers(Question question) {
-		// Delete old answers for this question
-		answerDAO.deleteByQuestionId(question.getId());
+    /**
+     * Accessor for QuestionDAO.
+     * 
+     * @return {@link QuestionDAO}.
+     */
+    public QuestionDAO getQuestionDAO() {
+        return questionDAO;
+    }
 
-		// Insert all current answers
-		for (Answer answer : question.getAnswers()) {
-			answer.setQuestion(question); // enforce relationship
-			answerDAO.insert(answer);
-		}
-	}
-
-	public List<Theme> findAllThemes() {
-	    return themeDAO.findAll();
-	}
-	public List<Question> findQuestionsByTheme(Theme t) {
-	    return questionDAO.findByTheme(t);
-	}
-	public List<QuizStatistic> findStatisticsByQuestionId(int qid) {
-	    return statisticDAO.findByQuestionId(qid);
-	}
-	
-	public ThemeDAO getThemeDAO() {
-	    return this.themeDAO;
-	}
-
-	public QuestionDAO getQuestionDAO() {
-	    return this.questionDAO;
-	}
-
-	public StatisticDAO getStatisticDAO() {
-	    return this.statisticDAO;
-	}
-
-
-
-
-
+    /**
+     * Accessor for StatisticDAO.
+     * 
+     * @return {@link StatisticDAO}.
+     */
+    public StatisticDAO getStatisticDAO() {
+        return statisticDAO;
+    }
 }

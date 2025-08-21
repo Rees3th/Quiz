@@ -29,7 +29,7 @@ import javax.swing.JTextArea;
  * 
  * @author Oleg Kapirulya
  */
-public class questionPanel extends JPanel {
+public class QuestionPanel extends JPanel {
 
 	/** Serial version UID for serialization compatibility. */
 	private static final long serialVersionUID = 1L;
@@ -40,7 +40,7 @@ public class questionPanel extends JPanel {
 	 * @param textArea the {@link JTextArea} used to display or edit the question
 	 *                 text
 	 */
-	public questionPanel(JTextArea textArea) {
+	public QuestionPanel(JTextArea textArea) {
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
 		// Label for the question

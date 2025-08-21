@@ -1,4 +1,4 @@
-package persistence.MariaDB;
+package persistence.DataBase;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -12,8 +12,7 @@ import quizLogic.Answer;
 import quizLogic.Question;
 
 /**
- * {@code MariaDBAnswerDAO} is the MariaDB/MySQL implementation of
- * {@link AnswerDAO}.
+ * {@code DBAnswerDAO} is the MariaDB/MySQL implementation of {@link AnswerDAO}.
  *
  * <p>
  * Responsibilities:
@@ -30,18 +29,20 @@ import quizLogic.Question;
  * interacting with the database. Exception handling is kept simple (printing
  * stack traces) but can be enhanced for production use.
  * </p>
+ * 
+ * @author Oleg Kapirulya
  */
-public class MariaDBAnswerDAO implements AnswerDAO {
+public class DBAnswerDAO implements AnswerDAO {
 
 	/** Active DB connection, provided by {@link persistence.DBDataManager}. */
 	private final Connection conn;
 
 	/**
-	 * Constructs a new MariaDBAnswerDAO with an active database connection.
+	 * Constructs a new DBAnswerDAO with an active database connection.
 	 *
 	 * @param conn an open JDBC {@link Connection}
 	 */
-	public MariaDBAnswerDAO(Connection conn) {
+	public DBAnswerDAO(Connection conn) {
 		this.conn = conn;
 	}
 

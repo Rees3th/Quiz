@@ -180,8 +180,8 @@ public class QuizQuestionPanel extends JPanel implements QuizQuestionDelegate {
 			quizQuestionRight.setQuestion(List.of());
 			return;
 		}
-		List<Question> fragen = dm.getQuestionsFor(theme);
-		quizQuestionRight.setQuestion(fragen);
+		List<Question> question = dm.getQuestionsFor(theme);
+		quizQuestionRight.setQuestion(question);
 	}
 
 	/**

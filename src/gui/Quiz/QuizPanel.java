@@ -161,10 +161,9 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 	 */
 	@Override
 	public void onSaveAnswer() {
-
+		// If the user has already shown the answer, they cannot save again
 		if (hasShownAnswer) {
-			quizButtonPanel.getMessagePanel()
-					.setText(QuizValidator.MSG_CANNOT_SAVE_AFTER_SHOW);
+			quizButtonPanel.getMessagePanel().setText(QuizValidator.MSG_CANNOT_SAVE_AFTER_SHOW);
 			return;
 		}
 		// Get currently selected question and user selection
@@ -173,7 +172,7 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 			quizButtonPanel.getMessagePanel().setText(QuizValidator.MSG_NO_QUESTION_SELECTED);
 			return;
 		}
-		// Check which checkboxes are selected:
+		// Check if the user has selected any answers
 		boolean correct = true; // assume correct unless found otherwise
 		List<Answer> answers = q.getAnswers();
 		boolean answerSelected = false;
@@ -212,7 +211,8 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 	 */
 	@Override
 	public void onNewQuestion() {
-		hasShownAnswer  = false;
+		// Reset state: no answer shown yet
+		hasShownAnswer = false;
 		// Make sure the latest list of questions is displayed
 		quizPanelRight.getQuizQuestionRightLayout().showQuestionList();
 		// Retrieve the JList containing all questions

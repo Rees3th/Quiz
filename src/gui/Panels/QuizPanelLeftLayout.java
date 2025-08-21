@@ -12,7 +12,6 @@ import javax.swing.*;
  * <li>Theme and question title fields</li>
  * <li>Question text area</li>
  * <li>Answer section with a header and multiple answer rows</li>
- * <li>A message/status field at the bottom</li>
  * </ul>
  * </p>
  *
@@ -47,7 +46,6 @@ public class QuizPanelLeftLayout {
 	 * @param frageArea    the text area for the question text
 	 * @param answerFields an array of text fields for the possible answers
 	 * @param checkboxes   an array of checkboxes for marking answers as correct
-	 * @param messageField the text field for displaying feedback or status messages
 	 */
 	public static void build(JPanel panel, JTextField themaField, JTextField titelField, JTextArea frageArea,
 			JTextField[] answerFields, JCheckBox[] checkboxes) {
@@ -64,7 +62,7 @@ public class QuizPanelLeftLayout {
 		panel.add(Box.createVerticalStrut(10));
 
 		// --- Question ---
-		panel.add(new questionPanel(frageArea));
+		panel.add(new QuestionPanel(frageArea));
 		panel.add(Box.createVerticalStrut(15));
 
 		// --- Answer header ---

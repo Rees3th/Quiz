@@ -17,9 +17,11 @@ import quizLogic.Theme;
  * </ul>
  *
  * <p>
- * Implementations (e.g., {@code MariaDBThemeDAO}) handle the actual persistence
+ * Implementations (e.g., {@code DBThemeDAO}) handle the actual persistence
  * logic using a specific database technology.
  * </p>
+ * 
+ * @author Oleg Kapirulya
  */
 public interface ThemeDAO {
 

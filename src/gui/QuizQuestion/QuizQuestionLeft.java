@@ -13,7 +13,7 @@ import javax.swing.JTextField;
 
 import gui.Panels.AnswerHeaderPanel;
 import gui.Panels.AnswerRowPanel;
-import gui.Panels.questionPanel;
+import gui.Panels.QuestionPanel;
 import gui.Panels.LabelFieldPanel;
 import persistence.DBDataManager;
 import quizLogic.Answer;
@@ -47,7 +47,7 @@ import quizLogic.Theme;
  *
  * <p>
  * UI layout is structured using {@link BoxLayout} with helper classes like
- * {@link LabelFieldPanel}, {@link questionPanel}, {@link AnswerHeaderPanel},
+ * {@link LabelFieldPanel}, {@link QuestionPanel}, {@link AnswerHeaderPanel},
  * and {@link AnswerRowPanel}.
  * </p>
  *
@@ -139,7 +139,7 @@ public class QuizQuestionLeft extends JPanel {
 		add(Box.createVerticalStrut(10));
 		add(new LabelFieldPanel("Title:", titelField));
 		add(Box.createVerticalStrut(10));
-		add(new questionPanel(questionArea));
+		add(new QuestionPanel(questionArea));
 		add(Box.createVerticalStrut(15));
 		add(new AnswerHeaderPanel());
 		add(Box.createVerticalStrut(8));

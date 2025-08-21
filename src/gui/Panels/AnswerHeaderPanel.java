@@ -12,8 +12,7 @@ import javax.swing.JPanel;
  * <p>
  * It contains two labels:
  * <ul>
- * <li><b>"Possible Answer"</b> – indicating the possible answer
- * options</li>
+ * <li><b>"Possible Answer"</b> – indicating the possible answer options</li>
  * <li><b>"Correct"</b> – indicating the column where the correct answer
  * checkbox will appear</li>
  * </ul>
@@ -43,7 +42,7 @@ public class AnswerHeaderPanel extends JPanel {
 	/**
 	 * Constructs an {@code AnswerHeaderPanel} with two column labels:
 	 * <ul>
-	 * <li>"Mögliche Antwortwahl"</li>
+	 * <li>"Possible answer"</li>
 	 * <li>"Correct"</li>
 	 * </ul>
 	 */

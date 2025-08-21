@@ -1,4 +1,4 @@
-package persistence.MariaDB;
+package persistence.DataBase;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,7 +13,7 @@ import quizLogic.Question;
 import quizLogic.Theme;
 
 /**
- * {@code MariaDBQuestionDAO} is the MariaDB/MySQL implementation of
+ * {@code DBQuestionDAO} is the MariaDB/MySQL implementation of
  * {@link QuestionDAO}.
  *
  * <p>
@@ -28,10 +28,12 @@ import quizLogic.Theme;
  *
  * <p>
  * This DAO does <b>not</b> automatically load answers for questions. Associated
- * answers must be loaded via {@link persistence.MariaDB.MariaDBAnswerDAO}.
+ * answers must be loaded via {@link persistence.DataBase.DBAnswerDAO}.
  * </p>
+ * 
+ * @author Oleg Kapirulya
  */
-public class MariaDBQuestionDAO implements QuestionDAO {
+public class DBQuestionDAO implements QuestionDAO {
 
 	/** Active DB connection, managed by {@link persistence.DBDataManager}. */
 	private final Connection conn;
@@ -41,7 +43,7 @@ public class MariaDBQuestionDAO implements QuestionDAO {
 	 *
 	 * @param conn active JDBC {@link Connection}
 	 */
-	public MariaDBQuestionDAO(Connection conn) {
+	public DBQuestionDAO(Connection conn) {
 		this.conn = conn;
 	}
 
@@ -50,8 +52,8 @@ public class MariaDBQuestionDAO implements QuestionDAO {
 	 *
 	 * <p>
 	 * Note: Only question fields are filled. Theme reference only contains the
-	 * theme ID (no title/text). Use {@link persistence.MariaDB.MariaDBThemeDAO} if
-	 * full theme details are needed.
+	 * theme ID (no title/text). Use {@link persistence.DataBase.DBThemeDAO} if full
+	 * theme details are needed.
 	 * </p>
 	 *
 	 * @param id the question ID

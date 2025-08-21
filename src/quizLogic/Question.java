@@ -5,7 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import persistence.DataAccessObject;
+import persistence.serialization.DataAccessObject;
 
 /**
  * {@code Question} represents a single quiz question.

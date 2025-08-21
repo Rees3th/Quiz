@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import persistence.DataAccessObject;
+import persistence.serialization.DataAccessObject;
 
 /**
  * {@code Theme} represents a quiz topic (or category).

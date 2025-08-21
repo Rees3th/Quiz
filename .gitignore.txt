@@ -1,0 +1,20 @@
+# Eclipse
+.settings/
+.project
+.classpath
+
+# Logs
+*.log
+
+# Compiled class files
+*.class
+
+# Temporary files
+*.tmp
+*.bak
+
+# Others
+bin/
+out/
+
+.env

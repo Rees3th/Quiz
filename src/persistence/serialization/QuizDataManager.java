@@ -38,6 +38,8 @@
 // * {@link persistence.DBDataManager} with a relational DB has replaced it. It is
 // * retained for reference and fallback purposes.
 // * </p>
+//
+//@author Oleg Kapirulya
 // */
 //public class QuizDataManager implements QuizDataInterface {
 //

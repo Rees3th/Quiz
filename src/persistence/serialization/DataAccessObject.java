@@ -1,4 +1,4 @@
-package persistence;
+package persistence.serialization;
 
 import java.io.Serializable;
 
@@ -19,6 +19,8 @@ import java.io.Serializable;
  * Subclasses are free to define additional properties but should rely on the
  * {@code id} field for persistence identity checks.
  * </p>
+ * 
+ * @author Oleg Kapirulya
  */
 public class DataAccessObject implements Serializable {
 

@@ -1,7 +1,8 @@
-package persistence;
+package persistence.serialization;
 
 import java.util.ArrayList;
 
+import persistence.DBDataManager;
 import quizLogic.Answer;
 import quizLogic.Question;
 import quizLogic.Theme;
@@ -40,7 +41,7 @@ public interface QuizDataInterface {
 	 *
 	 * @return an {@link ArrayList} of {@link Theme} objects (possibly empty)
 	 */
-	ArrayList<Theme> getAllThemen();
+	ArrayList<Theme> getAllThemes();
 
 	/**
 	 * Retrieves all questions for a given theme.
