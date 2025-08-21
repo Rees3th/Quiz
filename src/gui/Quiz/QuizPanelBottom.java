@@ -6,6 +6,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 
 import gui.Panels.ButtonPanel;
+import gui.Panels.MessagePanel;
 
 /**
  * {@code QuizPanelBottom} represents the bottom control bar in the quiz
@@ -45,6 +46,8 @@ public class QuizPanelBottom extends JPanel {
 
 	/** Button for loading a new question. */
 	private JButton newQuestionButton;
+	
+	private MessagePanel messagePanel;
 
 	/** Delegate responsible for handling the actions triggered by this panel. */
 	private QuizDelegate delegate;
@@ -73,6 +76,9 @@ public class QuizPanelBottom extends JPanel {
 		// Group all buttons inside a reusable container
 		ButtonPanel bp = new ButtonPanel(answerButton, saveButton, newQuestionButton);
 		add(bp, BorderLayout.CENTER);
+		
+		messagePanel = new MessagePanel();
+		add(messagePanel, BorderLayout.NORTH);
 
 		// Wire button clicks to delegate methods
 		saveButton.addActionListener(e -> {
@@ -139,5 +145,14 @@ public class QuizPanelBottom extends JPanel {
 	 */
 	public void setDelegate(QuizDelegate delegate) {
 		this.delegate = delegate;
+	}
+	
+	/**
+	 * Returns the {@link MessagePanel} used to display feedback or error messages.
+	 *
+	 * @return the message panel instance
+	 */
+	public MessagePanel getMessagePanel() {
+		return messagePanel;
 	}
 }

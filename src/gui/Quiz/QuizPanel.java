@@ -76,6 +76,9 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 	/** Random generator to ensure non-predictable selection of questions. */
 	private final Random random = new Random();
 
+	// State flag: true if Show Answer was clicked before Save Answer.
+	private boolean hasShownAnswer = false;
+
 	/**
 	 * Constructs a new {@code QuizPanel} and initializes all sub-panels.
 	 *
@@ -125,7 +128,7 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 		Question q = quizPanelRight.getQuizQuestionRightLayout().getQuestionList().getSelectedValue();
 		// If nothing is selected, inform the user and stop here
 		if (q == null) {
-			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_NO_QUESTION_SELECTED);
+			quizButtonPanel.getMessagePanel().setText(QuizValidator.MSG_NO_QUESTION_SELECTED);
 			return;
 		}
 		// Collect all correct answers
@@ -134,13 +137,14 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 			if (a.isCorrect()) {
 				correctAnswers.add(a.getText());
 			}
+			hasShownAnswer = true;
 		}
 		String correctAnswerText = String.join(", ", correctAnswers);
 		// Show correct answer on the right panel as feedback
 		quizPanelRight.getQuizQuestionRightLayout()
 				.showFeedbackAnswer(QuizValidator.MSG_CORRECT_ANSWER_IS + correctAnswerText);
 		// Clear any message on the left panel
-		quizPanelLeft.getMessageField().setText("");
+		quizButtonPanel.getMessagePanel().setText("");
 		// Mark the question as answered in the right panel (e.g., highlight state)
 		quizPanelRight.markAnswered(q.getId());
 	}
@@ -157,10 +161,16 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 	 */
 	@Override
 	public void onSaveAnswer() {
+
+		if (hasShownAnswer) {
+			quizButtonPanel.getMessagePanel()
+					.setText(QuizValidator.MSG_CANNOT_SAVE_AFTER_SHOW);
+			return;
+		}
 		// Get currently selected question and user selection
 		Question q = quizPanelRight.getQuizQuestionRightLayout().getQuestionList().getSelectedValue();
 		if (q == null) {
-			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_NO_QUESTION_SELECTED);
+			quizButtonPanel.getMessagePanel().setText(QuizValidator.MSG_NO_QUESTION_SELECTED);
 			return;
 		}
 		// Check which checkboxes are selected:
@@ -176,7 +186,7 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 		}
 		// If no answer selected, show a hint
 		if (!answerSelected) {
-			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_NO_SELECTION_MADE);
+			quizButtonPanel.getMessagePanel().setText(QuizValidator.MSG_NO_SELECTION_MADE);
 			return;
 		}
 		// Save statistics about the answer
@@ -184,9 +194,9 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 		dm.getStatisticDAO().insert(stat);
 		// Give feedback to user
 		if (correct) {
-			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_CORRECT);
+			quizButtonPanel.getMessagePanel().setText(QuizValidator.MSG_CORRECT);
 		} else {
-			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_WRONG_WITH_HINT);
+			quizButtonPanel.getMessagePanel().setText(QuizValidator.MSG_WRONG_WITH_HINT);
 		}
 	}
 
@@ -202,6 +212,7 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 	 */
 	@Override
 	public void onNewQuestion() {
+		hasShownAnswer  = false;
 		// Make sure the latest list of questions is displayed
 		quizPanelRight.getQuizQuestionRightLayout().showQuestionList();
 		// Retrieve the JList containing all questions
@@ -209,8 +220,8 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 		DefaultListModel<Question> model = (DefaultListModel<Question>) fragenList.getModel();
 		// Case 1: No questions available -> display message and clear panel
 		if (model.getSize() == 0) {
-			quizPanelLeft.getMessageField().setText(QuizValidator.MSG_NO_QUESTIONS_AVAILABLE);
-			quizPanelLeft.setFrage(null);
+			quizButtonPanel.getMessagePanel().setText(QuizValidator.MSG_NO_QUESTIONS_AVAILABLE);
+			quizPanelLeft.setQuestion(null);
 			return;
 		}
 		// Case 2: Randomly choose an index from question list
@@ -221,7 +232,7 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 		// Set the selection in the question list (so UI highlights it)
 		fragenList.setSelectedIndex(randomIndex);
 		// Display the full question (with answers) on the left panel
-		quizPanelLeft.setFrage(fullQ);
+		quizPanelLeft.setQuestion(fullQ);
 		// Clear any old messages
 		quizPanelLeft.getMessageField().setText("");
 		// Re-enable checkboxes so user can answer

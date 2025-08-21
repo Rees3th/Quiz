@@ -159,7 +159,9 @@ public class QuizQuestionLeft extends JPanel {
 	 * @param t the selected {@link Theme}, or {@code null} to clear the theme field
 	 */
 	public void setThema(Theme t) {
-		themeField.setText(t != null ? t.getTitle() : "");
+		if (t != null) {
+			themeField.setText(t.getTitle());
+		}
 	}
 
 	/**
@@ -178,6 +180,7 @@ public class QuizQuestionLeft extends JPanel {
 			clearFields();
 			return;
 		}
+		setThema(q.getThema());
 		titelField.setText(q.getTitle());
 		questionArea.setText(q.getText());
 		List<Answer> answers = q.getAnswers();

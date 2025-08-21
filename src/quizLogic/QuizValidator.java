@@ -37,4 +37,12 @@ public class QuizValidator {
 	 * Prefix for displaying the correct answer (actual answer text is appended).
 	 */
 	public static final String MSG_CORRECT_ANSWER_IS = "Die richtige Antwort ist: ";
+	
+	public static final String MSG_NO_SELECTION_MADE = "Bitte wähle eine Antwort aus.";
+	
+	public static final String MSG_CORRECT = "Richtig!";
+	
+	public static final String MSG_WRONG_WITH_HINT = "Leider falsch. Versuche es erneut.";
+	
+	public static final String MSG_CANNOT_SAVE_AFTER_SHOW = "Nach dem Anzeigen der Antwort kann keine Antwort mehr gespeichert werden.";
 }

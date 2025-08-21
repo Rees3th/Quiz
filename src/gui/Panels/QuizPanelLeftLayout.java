@@ -50,7 +50,7 @@ public class QuizPanelLeftLayout {
 	 * @param messageField the text field for displaying feedback or status messages
 	 */
 	public static void build(JPanel panel, JTextField themaField, JTextField titelField, JTextArea frageArea,
-			JTextField[] answerFields, JCheckBox[] checkboxes, JTextField messageField) {
+			JTextField[] answerFields, JCheckBox[] checkboxes) {
 
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 		panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -78,8 +78,5 @@ public class QuizPanelLeftLayout {
 		}
 		panel.add(Box.createVerticalStrut(15));
 
-		// --- Message field ---
-		panel.add(new MessagePanel());
-		panel.add(Box.createVerticalStrut(15));
 	}
 }

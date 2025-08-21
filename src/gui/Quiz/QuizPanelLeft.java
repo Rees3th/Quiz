@@ -95,7 +95,7 @@ public class QuizPanelLeft extends JPanel {
 		this.dm = dm;
 		initComponents();
 		// Delegate layout arrangement to a dedicated layout helper class
-		QuizPanelLeftLayout.build(this, themaField, titelField, frageArea, answerFields, checkboxes, messageField);
+		QuizPanelLeftLayout.build(this, themaField, titelField, frageArea, answerFields, checkboxes);
 		// Initially, clear the panel to show no question selected
 		fillWithData(null);
 	}
@@ -149,7 +149,7 @@ public class QuizPanelLeft extends JPanel {
 			clearFields();
 			return;
 		}
-		themaField.setText(q.getThema() != null ? q.getThema().getTitle() : "");
+		setThema(q.getThema());
 		titelField.setText(q.getTitle());
 		frageArea.setText(q.getText());
 
@@ -229,7 +229,7 @@ public class QuizPanelLeft extends JPanel {
 	 *
 	 * @param q the {@link Question} to show
 	 */
-	public void setFrage(Question q) {
+	public void setQuestion(Question q) {
 		fillWithData(q);
 	}
 

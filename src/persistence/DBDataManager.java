@@ -9,12 +9,15 @@ import java.util.List;
 
 import persistence.DAO.AnswerDAO;
 import persistence.DAO.QuestionDAO;
+import persistence.DAO.StatisticDAO;
 import persistence.DAO.ThemeDAO;
 import persistence.MariaDB.MariaDBAnswerDAO;
 import persistence.MariaDB.MariaDBQuestionDAO;
+import persistence.MariaDB.MariaDBStatisticDAO;
 import persistence.MariaDB.MariaDBThemeDAO;
 import quizLogic.Answer;
 import quizLogic.Question;
+import quizLogic.QuizStatistic;
 import quizLogic.Theme;
 
 /**
@@ -62,6 +65,9 @@ public class DBDataManager {
 
 	/** DAO for managing Answers. */
 	private final AnswerDAO answerDAO;
+	
+	/** DAO for managing Quiz Statistics. */
+	private final StatisticDAO statisticDAO;
 
 	/**
 	 * Constructs a new {@code DBDataManager}.
@@ -82,6 +88,7 @@ public class DBDataManager {
 		themeDAO = new MariaDBThemeDAO(conn);
 		questionDAO = new MariaDBQuestionDAO(conn);
 		answerDAO = new MariaDBAnswerDAO(conn);
+		statisticDAO = new MariaDBStatisticDAO(conn);
 	}
 
 	// ------------------- Initialization -------------------
@@ -201,6 +208,10 @@ public class DBDataManager {
 			for (Answer a : answers) {
 				q.addAnswer(a);
 			}
+			if (q.getThema() != null && q.getThema().getId() > 0) {
+	            Theme fullTheme = themeDAO.findById(q.getThema().getId());
+	            q.setThema(fullTheme);
+	        }
 		}
 		return q;
 	}
@@ -270,4 +281,31 @@ public class DBDataManager {
 			answerDAO.insert(answer);
 		}
 	}
+
+	public List<Theme> findAllThemes() {
+	    return themeDAO.findAll();
+	}
+	public List<Question> findQuestionsByTheme(Theme t) {
+	    return questionDAO.findByTheme(t);
+	}
+	public List<QuizStatistic> findStatisticsByQuestionId(int qid) {
+	    return statisticDAO.findByQuestionId(qid);
+	}
+	
+	public ThemeDAO getThemeDAO() {
+	    return this.themeDAO;
+	}
+
+	public QuestionDAO getQuestionDAO() {
+	    return this.questionDAO;
+	}
+
+	public StatisticDAO getStatisticDAO() {
+	    return this.statisticDAO;
+	}
+
+
+
+
+
 }

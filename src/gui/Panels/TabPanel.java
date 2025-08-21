@@ -8,6 +8,7 @@ import javax.swing.JTabbedPane;
 import gui.Quiz.QuizPanel;
 import gui.QuizQuestion.QuizQuestionPanel;
 import gui.QuizThemes.QuizThemePanel;
+import gui.Statistic.StatisticsContainerPanel;
 
 /**
  * {@code TabPanel} is a customized {@link JTabbedPane} that contains the main
@@ -57,7 +58,7 @@ public class TabPanel extends JTabbedPane {
 	 *                        Questions" tab
 	 * @param quizPanel       the {@link QuizPanel} used in the "Quiz" tab
 	 */
-	public TabPanel(QuizThemePanel quizThemenPanel, QuizQuestionPanel quizQuestionPanel, QuizPanel quizPanel, StatisticPanel statisticPanel) {
+	public TabPanel(QuizThemePanel quizThemenPanel, QuizQuestionPanel quizQuestionPanel, QuizPanel quizPanel, StatisticsContainerPanel statisticsContainerPanel) {
 
 		super(JTabbedPane.TOP);
 
@@ -72,7 +73,7 @@ public class TabPanel extends JTabbedPane {
 			} else if (tab == 2) { // "Quiz" tab
 				quizPanel.getQuizPanelRight().reloadAllThemesAndQuestions();
 			} else if (tab == 3) { // "Statistic" tab
-				statisticPanel.fillWithData(quizPanel.getDm());
+				statisticsContainerPanel.refresh();
 			}
 		});
 	}

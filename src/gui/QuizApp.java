@@ -5,11 +5,11 @@ import java.sql.SQLException;
 
 import javax.swing.JFrame;
 
-import gui.Panels.StatisticPanel;
 import gui.Panels.TabPanel;
 import gui.Quiz.QuizPanel;
 import gui.QuizQuestion.QuizQuestionPanel;
 import gui.QuizThemes.QuizThemePanel;
+import gui.Statistic.StatisticsContainerPanel;
 import persistence.DBDataManager;
 
 /**
@@ -101,15 +101,15 @@ public class QuizApp extends JFrame {
 		// Panel to run the actual quiz gameplay
 		QuizPanel quizPanel = new QuizPanel(dm);
 
-		StatisticPanel statisticPanel = new StatisticPanel(dm);
+		StatisticsContainerPanel statsContainer = new StatisticsContainerPanel(dm);
 		// ---------------- Create Tab Panel ----------------
-		TabPanel tabPanel = new TabPanel(quizThemenPanel, quizQuestionPanel, quizPanel, statisticPanel);
+		TabPanel tabPanel = new TabPanel(quizThemenPanel, quizQuestionPanel, quizPanel, statsContainer);
 
 		// Add tabs with user-facing names
 		tabPanel.addTab("Add Theme", quizThemenPanel); // Manage quiz topics
 		tabPanel.addTab("Add Question", quizQuestionPanel); // Manage quiz questions
 		tabPanel.addTab("Quiz", quizPanel); // Play the quiz
-		tabPanel.addTab("Statistics", statisticPanel); 
+		tabPanel.addTab("Statistics", statsContainer);
 
 		// ---------------- Add TabPanel to Frame ----------------
 		add(tabPanel);
