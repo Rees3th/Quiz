@@ -94,9 +94,10 @@ public class QuizThemePanel extends JPanel implements QuizThemeDelegate {
 		quizThemeBottom.setDelegate(this);
 
 		// Add panels to layout
-		add(quizThemeLeft, BorderLayout.WEST);
+		add(quizThemeLeft, BorderLayout.CENTER);
 		add(quizThemeRight, BorderLayout.EAST);
 		add(quizThemeBottom, BorderLayout.SOUTH);
+		
 	}
 
 	/**

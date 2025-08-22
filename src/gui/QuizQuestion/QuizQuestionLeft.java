@@ -102,8 +102,7 @@ public class QuizQuestionLeft extends JPanel {
 	private void initPanel() {
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-		setMaximumSize(new Dimension(500, 500));
-		setPreferredSize(new Dimension(450, 500));
+
 	}
 
 	/**

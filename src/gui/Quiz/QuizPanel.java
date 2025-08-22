@@ -108,7 +108,7 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 		// Register this panel as delegate for bottom control events
 		quizButtonPanel.setDelegate(this);
 		// Add components to the main layout
-		add(quizPanelLeft, BorderLayout.WEST);
+		add(quizPanelLeft, BorderLayout.CENTER);
 		add(quizPanelRight, BorderLayout.EAST);
 		add(quizButtonPanel, BorderLayout.SOUTH);
 	}
@@ -215,6 +215,7 @@ public class QuizPanel extends JPanel implements QuizDelegate {
 		hasShownAnswer = false;
 		// Make sure the latest list of questions is displayed
 		quizPanelRight.getQuizQuestionRightLayout().showQuestionList();
+		quizButtonPanel.getMessagePanel().setText("");
 		// Retrieve the JList containing all questions
 		JList<Question> fragenList = quizPanelRight.getQuizQuestionRightLayout().getQuestionList();
 		DefaultListModel<Question> model = (DefaultListModel<Question>) fragenList.getModel();

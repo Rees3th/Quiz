@@ -46,7 +46,7 @@ public class AnswerRowPanel extends JPanel {
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 
 		// Label for the answer number
-		JLabel label = new JLabel("Antwort " + idx + ":");
+		JLabel label = new JLabel(idx + ":");
 		label.setPreferredSize(new Dimension(80, 36));
 		add(label);
 

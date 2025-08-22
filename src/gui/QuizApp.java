@@ -1,5 +1,6 @@
 package gui;
 
+import java.awt.Dimension;
 import java.awt.HeadlessException;
 import java.sql.SQLException;
 
@@ -75,6 +76,7 @@ public class QuizApp extends JFrame {
 	 * @throws SQLException      if initialization of the database connection fails
 	 */
 	public QuizApp() throws HeadlessException, SQLException {
+
 		// Create the central data access manager
 		DBDataManager dm = new DBDataManager();
 
@@ -82,7 +84,9 @@ public class QuizApp extends JFrame {
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setBounds(FRAME_X, FRAME_Y, FRAME_WIDTH, FRAME_HEIGHT);
 		setTitle("Quiz App");
-		setResizable(false);
+		setResizable(true);
+		setMinimumSize(new Dimension(650, 500));
+
 
 		// Instantiate core UI panels, all sharing the same DBDataManager instance
 		QuizThemePanel quizThemePanel = new QuizThemePanel(dm);

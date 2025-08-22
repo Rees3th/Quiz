@@ -82,7 +82,7 @@ public class QuizQuestionPanel extends JPanel implements QuizQuestionDelegate {
 		quizQuestionRight.setPanelLeft(quizQuestionLeft);
 		quizQuestionLeft.setPanelRight(quizQuestionRight);
 
-		add(quizQuestionLeft, BorderLayout.WEST);
+		add(quizQuestionLeft, BorderLayout.CENTER);
 		add(quizQuestionRight, BorderLayout.EAST);
 		add(quizQuestionBottom, BorderLayout.SOUTH);
 	}

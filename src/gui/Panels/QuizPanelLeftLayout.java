@@ -52,8 +52,7 @@ public class QuizPanelLeftLayout {
 
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 		panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-		panel.setMaximumSize(new Dimension(500, 500));
-		panel.setPreferredSize(new Dimension(450, 500));
+
 
 		// --- Theme & Title ---
 		panel.add(new LabelFieldPanel("Thema:", themaField));
