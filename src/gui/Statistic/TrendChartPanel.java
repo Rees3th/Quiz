@@ -6,6 +6,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,135 +14,141 @@ import java.util.Map;
 import javax.swing.JPanel;
 
 /**
- * TrendChartPanel is a Swing component that visualizes the accuracy trends over
- * calendar weeks.
+ * The {@code TrendChartPanel} class is a Swing JPanel component that displays a
+ * line chart illustrating quiz accuracy over time.
+ * 
  * <p>
- * It draws a line chart plotting accuracy percentages for each calendar week,
- * with axes, data points, and connecting lines.
+ * This panel supports two display modes:
+ * <ul>
+ * <li>"daily" - accuracy per day</li>
+ * <li>"weekly" - accuracy per calendar week</li>
+ * </ul>
+ * The mode controls the interpretation and labeling of the X-axis data.
  * </p>
- * The accuracy data is supplied as a map from week labels (e.g., "2025-34") to
- * accuracy values (percentage). Use {@link #setWeeklyAccuracyData(Map)} to
- * provide the data.
+ * 
+ * <p>
+ * Data points are plotted as red circles connected by blue lines. The Y-axis
+ * runs from 0% to 100% accuracy, with grid lines and labels. The X-axis labels
+ * reflect either dates or week labels depending on the mode.
+ * </p>
+ * 
+ * Usage:
+ * 
+ * <pre>
+ * TrendChartPanel panel = new TrendChartPanel();
+ * panel.setTrendData(dataMap, "daily"); // or "weekly"
+ * 
+ * // Add panel to UI container
+ * </pre>
  * 
  * @author Oleg Kapirulya
  */
 public class TrendChartPanel extends JPanel {
-
 	private static final long serialVersionUID = 1L;
 
-	private Map<String, Double> weeklyAccuracy = new LinkedHashMap<>();
+	/** Mapping of x-axis labels (dates or weeks) to accuracy percentages */
+	private Map<String, Double> chartData = new LinkedHashMap<>();
+
+	/** Current display mode: "daily" or "weekly" */
+	private String chartMode = "daily";
 
 	/**
-	 * Sets the weekly accuracy data to be displayed.
+	 * Sets the data and display mode for the trend chart.
 	 * 
-	 * @param data Map of week labels to accuracy percentages (0 to 100).
+	 * @param data the map of string labels (days or weeks) to accuracy values
+	 *             (percentage)
+	 * @param mode the mode of display, must be "daily" or "weekly"
 	 */
-	public void setWeeklyAccuracyData(Map<String, Double> data) {
-		this.weeklyAccuracy = data;
+	public void setTrendData(Map<String, Double> data, String mode) {
+		if (data == null) {
+			this.chartData = Collections.emptyMap();
+		} else {
+			this.chartData = data;
+		}
+		if (mode != null && (mode.equals("daily") || mode.equals("weekly"))) {
+			this.chartMode = mode;
+		}
 		repaint();
 	}
 
 	@Override
 	protected void paintComponent(Graphics g) {
 		super.paintComponent(g);
-
-		if (weeklyAccuracy == null || weeklyAccuracy.isEmpty()) {
-			return; // nothing to draw
-		}
+		if (chartData == null || chartData.isEmpty())
+			return;
 
 		int width = getWidth();
 		int height = getHeight();
 
 		Graphics2D g2 = (Graphics2D) g;
-
-		// Enable anti-aliasing for smooth graphics
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-		// Padding around the chart area
-		int padding = 50;
-		int labelPadding = 30;
+		int padding = 50; // padding around chart area
+		int labelPadding = 30; // space for y-axis labels
 
-		double maxAccuracy = 100;
-		double minAccuracy = 0;
-
-		int pointCount = weeklyAccuracy.size();
-
-		if (pointCount < 2) {
-			// Not enough points to draw lines
+		double maxAccuracy = 100.0;
+		double minAccuracy = 0.0;
+		int pointCount = chartData.size();
+		if (pointCount < 2)
 			return;
-		}
-
 		int availableWidth = width - 2 * padding - labelPadding;
-		int stepX = availableWidth / (pointCount - 1);
+		int stepX = pointCount > 1 ? availableWidth / (pointCount - 1) : availableWidth;
 
-		List<String> weeks = new ArrayList<>(weeklyAccuracy.keySet());
-		List<Double> accuracies = new ArrayList<>(weeklyAccuracy.values());
+		List<String> xLabels = new ArrayList<>(chartData.keySet());
+		List<Double> accuracies = new ArrayList<>(chartData.values());
 
-		// Draw Y axis
+		// Draw Y axis line
+		g2.setColor(Color.BLACK);
 		g2.drawLine(padding + labelPadding, padding, padding + labelPadding, height - padding);
-		// Draw X axis
+		// Draw X axis line
 		g2.drawLine(padding + labelPadding, height - padding, width - padding, height - padding);
 
-		// Draw Y axis labels and grid lines
+		// Draw Y axis labels and horizontal grid lines
 		for (int i = 0; i <= 5; i++) {
-			int y = padding + (int) ((height - 2 * padding) * i / 5.0);
-			int yLabelPos = height - y - padding; // invert y for coordinate system
-
+			int y = height - padding - (int) ((height - 2 * padding) * i / 5.0);
 			int labelValue = (int) (minAccuracy + (maxAccuracy - minAccuracy) * i / 5);
-
-			g2.setColor(Color.GRAY);
-			g2.drawLine(padding + labelPadding - 5, yLabelPos, padding + labelPadding + 5, yLabelPos);
 			g2.setColor(Color.BLACK);
-			g2.drawString(labelValue + "%", padding + 5, yLabelPos + 5);
+			g2.drawString(labelValue + "%", padding + 5, y + 5);
 
-			// Optional: horizontal grid lines
-			g2.setColor(new Color(200, 200, 200));
-			g2.drawLine(padding + labelPadding, yLabelPos, width - padding, yLabelPos);
+			g2.setColor(new Color(200, 200, 200)); // light gray for grid
+			g2.drawLine(padding + labelPadding, y, width - padding, y);
 		}
 
-		// Draw connecting lines and dots for data points
-		g2.setColor(Color.BLUE);
+		// Draw data points and lines connecting them
 		int prevX = padding + labelPadding;
 		int prevY = height - padding
 				- (int) ((accuracies.get(0) - minAccuracy) / (maxAccuracy - minAccuracy) * (height - 2 * padding));
-
 		for (int i = 0; i < pointCount; i++) {
 			int x = padding + labelPadding + i * stepX;
 			int y = height - padding
 					- (int) ((accuracies.get(i) - minAccuracy) / (maxAccuracy - minAccuracy) * (height - 2 * padding));
-
-			// Draw line connecting previous point to current
 			if (i > 0) {
+				g2.setColor(Color.BLUE);
 				g2.drawLine(prevX, prevY, x, y);
 			}
-
-			// Draw point
 			g2.setColor(Color.RED);
-			g2.fillOval(x - 4, y - 4, 8, 8);
+			g2.fillOval(x - 3, y - 3, 6, 6); // red dot
 			g2.setColor(Color.BLACK);
-			g2.drawOval(x - 4, y - 4, 8, 8);
+
+			// Draw X axis label (date or week string) centered below the dot
+			String label = xLabels.get(i);
+			int strWidth = g2.getFontMetrics().stringWidth(label);
+			g2.drawString(label, x - strWidth / 2, height - padding + 20);
 
 			prevX = x;
 			prevY = y;
-
-			// Draw X axis labels (week names)
-			String weekLabel = weeks.get(i);
-			g2.setColor(Color.BLACK);
-			int strWidth = g2.getFontMetrics().stringWidth(weekLabel);
-			g2.drawString(weekLabel, x - strWidth / 2, height - padding + 20);
 		}
 
-		// Draw chart title
-		g2.setFont(g2.getFont().deriveFont(Font.BOLD, 16f));
+		// Draw chart title and axis labels
+		g2.setFont(new Font("SansSerif", Font.BOLD, 14));
 		g2.setColor(Color.BLACK);
-		g2.drawString("Accuracy Over Calendar Weeks", padding, padding - 15);
+		g2.drawString("Accuracy " + (chartMode.equals("weekly") ? "per Week" : "per Day"), padding, padding - 25);
+		g2.drawString(chartMode.equals("weekly") ? "Week" : "Day", width / 2, height - 5);
 
-		// Draw axis titles
-		g2.drawString("Week", width / 2 - 20, height - 5);
-
+		// Draw rotated Y-axis label "Accuracy (%)"
 		Graphics2D g2d = (Graphics2D) g2.create();
 		g2d.rotate(-Math.PI / 2);
-		g2d.drawString("Accuracy (%)", -height / 2 - 30, padding - 30);
+		g2d.drawString("Accuracy (%)", -height / 2, padding - 10);
 		g2d.dispose();
 	}
 }
